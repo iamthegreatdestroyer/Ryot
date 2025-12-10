@@ -1,0 +1,18 @@
+# ninja log v7
+2	355	1765337245037753986	src/core/CMakeFiles/ryzen_llm_core.dir/mamba/ssm.cpp.o	dee93c6c7a2202fa
+1	356	1765337245036753970	src/core/CMakeFiles/ryzen_llm_core.dir/tmac/lut_gemm.cpp.o	8e6e0702737a4f4b
+3	406	1765337245038754002	src/core/CMakeFiles/ryzen_llm_core.dir/mamba/scan.cpp.o	6b5944774a9963ec
+355	527	1765337245390759715	src/core/CMakeFiles/ryzen_llm_core.dir/rwkv/time_mixing.cpp.o	7b75625c6dbb4027
+1	591	1765337245036753970	src/core/CMakeFiles/ryzen_llm_core.dir/bitnet/engine.cpp.o	f98daeca34bcb17b
+5	600	1765337245040754035	src/core/CMakeFiles/ryzen_llm_core.dir/rwkv/wkv.cpp.o	9a8b94a623dc70ce
+1	654	1765337245036753970	src/core/CMakeFiles/ryzen_llm_core.dir/bitnet/quantize.cpp.o	f63fb71130b34813
+356	743	1765337245394759780	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/cache_manager.cpp.o	c69160711722df
+600	758	1765337245638763740	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/speculative/draft_model.cpp.o	80ef8579734de548
+758	1029	1765337245793766256	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/memory/kv_cache.cpp.o	a3a42c049f5e453c
+591	1189	1765337245626763545	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/avx512/vnni.cpp.o	96a9168e715e46da
+406	1237	1765337245441760543	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/avx512/matmul.cpp.o	1b67c0c8da0235d7
+527	1296	1765337245562762507	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/avx512/activation.cpp.o	b4f615f9fda8e19a
+1029	1363	1765337246065770670	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/memory/pool.cpp.o	5251e98df4b58772
+743	1418	1765337245778766012	src/optimization/CMakeFiles/ryzen_llm_optimization.dir/speculative/verifier.cpp.o	cf93e560ea98528c
+654	6138	1765337245689764568	src/core/libryzen_llm_core.a	523f1b68a55f5fe8
+6138	6219	1765337251172852471	src/optimization/libryzen_llm_optimization.a	52132a9381bbce50
