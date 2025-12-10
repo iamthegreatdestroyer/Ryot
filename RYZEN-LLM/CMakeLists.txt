@@ -33,14 +33,13 @@ check_cxx_compiler_flag("-mavx512vnni" COMPILER_SUPPORTS_AVX512VNNI)
 
 if(COMPILER_SUPPORTS_AVX512F AND COMPILER_SUPPORTS_AVX512DQ AND COMPILER_SUPPORTS_AVX512VL)
     message(STATUS "AVX-512 support detected")
-    set(AVX512_FLAGS "-mavx512f -mavx512dq -mavx512vl")
+    add_compile_options(-mavx512f -mavx512dq -mavx512vl)
     
     if(COMPILER_SUPPORTS_AVX512VNNI)
         message(STATUS "AVX-512 VNNI support detected")
-        set(AVX512_FLAGS "${AVX512_FLAGS} -mavx512vnni")
+        add_compile_options(-mavx512vnni)
     endif()
     
-    add_compile_options(${AVX512_FLAGS})
     add_definitions(-DHAVE_AVX512)
 else()
     message(WARNING "AVX-512 not supported by compiler, some optimizations will be disabled")
