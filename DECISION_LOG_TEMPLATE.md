@@ -29,30 +29,33 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 
 ## Success Criteria
 
-| Criteria | Target | Actual | Status |
-|----------|--------|--------|--------|
-| 4-GPU speedup | 3.8-4.2x | [MEASURE] | ✓/✗ |
-| RPC overhead | <10% of latency | [MEASURE] | ✓/✗ |
-| Test coverage | ≥90% on new code | [MEASURE]% | ✓/✗ |
-| Blocking issues | 0 critical | [COUNT] | ✓/✗ |
-| Architecture decisions | Finalized | [STATUS] | ✓/✗ |
-| Team capacity | >85% | [MEASURE]% | ✓/✗ |
+| Criteria               | Target           | Actual     | Status |
+| ---------------------- | ---------------- | ---------- | ------ |
+| 4-GPU speedup          | 3.8-4.2x         | [MEASURE]  | ✓/✗    |
+| RPC overhead           | <10% of latency  | [MEASURE]  | ✓/✗    |
+| Test coverage          | ≥90% on new code | [MEASURE]% | ✓/✗    |
+| Blocking issues        | 0 critical       | [COUNT]    | ✓/✗    |
+| Architecture decisions | Finalized        | [STATUS]   | ✓/✗    |
+| Team capacity          | >85%             | [MEASURE]% | ✓/✗    |
 
 ## Performance Metrics
 
 **Distributed Inference Speedup**:
+
 - Single GPU baseline: 100 tokens/sec
 - 4-GPU target: 380-420 tokens/sec
 - Actual measurement: [tokens/sec]
 - Gap to target: [X%]
 
 **RPC Overhead Analysis**:
+
 - NCCL communication time: [X] ms
 - Inference kernel time: [Y] ms
 - RPC overhead %: [X / (X+Y) * 100]
 - Target: <10%
 
 **Test Coverage**:
+
 - New distributed module: [X%]
 - Integration tests: [X%]
 - E2E tests: [X%]
@@ -61,6 +64,7 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 ## Blockers & Risks Identified
 
 ### Blocker 1: [Name]
+
 - **Status**: OPEN / RESOLVED
 - **Impact**: [Description]
 - **Mitigation**: [Plan]
@@ -68,6 +72,7 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 - **ETA**: [Date]
 
 ### Risk 1: [Name]
+
 - **Probability**: HIGH / MEDIUM / LOW
 - **Impact**: [Description]
 - **Mitigation**: [Plan]
@@ -81,10 +86,12 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 [Detailed explanation of why this decision was made, considering all criteria above]
 
 ### If GO:
+
 - Proceed to Week 3 & 4 (production hardening & validation)
 - Continue as planned to Sprint 1.1 completion Feb 3
 
 ### If GO WITH MITIGATIONS:
+
 - **Mitigations Required**:
   1. [Mitigation 1] - Owner: [@Name] - Deadline: [Date]
   2. [Mitigation 2] - Owner: [@Name] - Deadline: [Date]
@@ -93,6 +100,7 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 - **Re-evaluation Date**: [Date + 3 days]
 
 ### If NO-GO:
+
 - **Reasons**: [Detailed explanation]
 - **Recovery Plan**: [What to do next]
 - **Timeline**: [Revised schedule]
@@ -101,11 +109,11 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 
 ## Action Items
 
-| Action | Owner | Due Date | Status |
-|--------|-------|----------|--------|
-| [Action 1] | [@Name] | [Date] | OPEN |
-| [Action 2] | [@Name] | [Date] | OPEN |
-| [Action 3] | [@Name] | [Date] | OPEN |
+| Action     | Owner   | Due Date | Status |
+| ---------- | ------- | -------- | ------ |
+| [Action 1] | [@Name] | [Date]   | OPEN   |
+| [Action 2] | [@Name] | [Date]   | OPEN   |
+| [Action 3] | [@Name] | [Date]   | OPEN   |
 
 ## Stakeholder Sign-Off
 
@@ -127,7 +135,6 @@ Sprint 1.1 goal: Achieve 3.8-4.2x speedup on 4 GPUs with <10% RPC overhead.
 ## Notes
 
 [Any additional context, discussion points, or rationale]
-
 ```
 
 ---
@@ -152,15 +159,15 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 
 ## Success Criteria
 
-| Criteria | Target | Status |
-|----------|--------|--------|
-| All Sprint 1.1 issues | Closed | ✓/✗ |
-| Performance SLA | 3.8-4.2x speedup | ✓/✗ |
-| Test coverage | ≥95% | ✓/✗ |
-| Phase 2 regressions | 0 | ✓/✗ |
-| Architecture documentation | 100% complete | ✓/✗ |
-| Team readiness | Ready for next | ✓/✗ |
-| Risk register | Clear | ✓/✗ |
+| Criteria                   | Target           | Status |
+| -------------------------- | ---------------- | ------ |
+| All Sprint 1.1 issues      | Closed           | ✓/✗    |
+| Performance SLA            | 3.8-4.2x speedup | ✓/✗    |
+| Test coverage              | ≥95%             | ✓/✗    |
+| Phase 2 regressions        | 0                | ✓/✗    |
+| Architecture documentation | 100% complete    | ✓/✗    |
+| Team readiness             | Ready for next   | ✓/✗    |
+| Risk register              | Clear            | ✓/✗    |
 
 ## Performance Final Numbers
 
@@ -180,12 +187,14 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 **Rationale**: [Detailed decision explanation]
 
 ### If GO:
+
 - Begin Sprint 1.2 (Feb 4)
 - Begin Sprint 2.1 (Feb 4) - API design
 - Begin Sprint 2.2 planning (Feb 4)
 - Schedule next checkpoint: Feb 10
 
 ### If EXTEND:
+
 - **Duration**: [Additional weeks]
 - **Reason**: [What needs completion]
 - **Focus Areas**: [Highest priority]
@@ -202,7 +211,6 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 - [ ] @APEX
 - [ ] @VELOCITY
 - [ ] Executive Sponsor
-
 ```
 
 ---
@@ -222,16 +230,19 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 ## Progress Summary
 
 ### Sprint 1.1 Completion (Weeks 1-4)
+
 - Status: [COMPLETE / ON-TRACK / AT-RISK]
 - Issues delivered: [X] of [Y]
 - Performance: [3.8-4.2x achieved]
 
 ### Sprint 1.2 Progress (Weeks 5-8)
+
 - Status: [% complete]
 - Issues delivered: [X] of [Y]
 - Performance targets: [vs plan]
 
 ### Sprint 2.1 Progress (Weeks 5-8)
+
 - Status: [% complete - may have started late]
 - Issues delivered: [X] of [Y]
 - API design: [% complete]
@@ -242,26 +253,29 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 
 ## Timeline Assessment
 
-| Milestone | Original | Current | Status |
-|-----------|----------|---------|--------|
-| Sprint 1 (Feb 3) | Feb 3 | [Date] | ON-TRACK / AT-RISK |
-| Sprint 1.2 (Mar 3) | Mar 3 | [Date] | ON-TRACK / AT-RISK |
-| Sprint 2.1 (Apr 7) | Apr 7 | [Date] | ON-TRACK / AT-RISK |
-| Phase 3 release (May 3) | May 3 | [Date] | ON-TRACK / AT-RISK |
+| Milestone               | Original | Current | Status             |
+| ----------------------- | -------- | ------- | ------------------ |
+| Sprint 1 (Feb 3)        | Feb 3    | [Date]  | ON-TRACK / AT-RISK |
+| Sprint 1.2 (Mar 3)      | Mar 3    | [Date]  | ON-TRACK / AT-RISK |
+| Sprint 2.1 (Apr 7)      | Apr 7    | [Date]  | ON-TRACK / AT-RISK |
+| Phase 3 release (May 3) | May 3    | [Date]  | ON-TRACK / AT-RISK |
 
 ## Adjustment Decision
 
 ### Option A: No Changes
+
 - Continue current plan
 - Maintain May 3 release date
 - No scope reductions
 
 ### Option B: Timeline Extension
+
 - Extend Phase 3 by [X weeks]
 - Reduce scope by [X%]
 - Focus on highest-value items
 
 ### Option C: Parallel Acceleration
+
 - Add resources (if available)
 - Intensive focus on Sprint 2.2
 - Maintain May 3 deadline
@@ -279,7 +293,6 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 - [ ] @ARCHITECT
 - [ ] @VELOCITY (lead of longest sprint)
 - [ ] Executive Sponsor
-
 ```
 
 ---
@@ -288,7 +301,7 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 
 **File**: `/decisions/gate_4_production_readiness_may3.md`
 
-```markdown
+````markdown
 # Gate 4 Decision Record: Production Readiness Review
 
 **Date**: May 3, 2026, 4:00 PM UTC  
@@ -298,20 +311,21 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 
 ## Final Success Criteria Assessment
 
-| Criteria | Target | Actual | Status |
-|----------|--------|--------|--------|
-| Performance SLA | 3.8-4.2x (1.1) + 2.5-3.0x (1.2) | [Measure] | ✓/✗ |
-| Latency SLA | <50ms p50 | [Measure] | ✓/✗ |
-| Availability SLA | 99.9% | [Measure] | ✓/✗ |
-| Test coverage | ≥95% | [Measure]% | ✓/✗ |
-| Phase 2 regressions | 0 | [Count] | ✓/✗ |
-| Documentation complete | 100% | [%] | ✓/✗ |
-| Security audit | PASS | [Status] | ✓/✗ |
-| Production deployment | Ready | [Status] | ✓/✗ |
+| Criteria               | Target                          | Actual     | Status |
+| ---------------------- | ------------------------------- | ---------- | ------ |
+| Performance SLA        | 3.8-4.2x (1.1) + 2.5-3.0x (1.2) | [Measure]  | ✓/✗    |
+| Latency SLA            | <50ms p50                       | [Measure]  | ✓/✗    |
+| Availability SLA       | 99.9%                           | [Measure]  | ✓/✗    |
+| Test coverage          | ≥95%                            | [Measure]% | ✓/✗    |
+| Phase 2 regressions    | 0                               | [Count]    | ✓/✗    |
+| Documentation complete | 100%                            | [%]        | ✓/✗    |
+| Security audit         | PASS                            | [Status]   | ✓/✗    |
+| Production deployment  | Ready                           | [Status]   | ✓/✗    |
 
 ## Deliverables Checklist
 
 **Sprint 1.1**:
+
 - [ ] Distributed tensor parallelism
 - [ ] NCCL communication layer
 - [ ] Multi-GPU orchestration
@@ -319,6 +333,7 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 - [ ] Architecture documentation
 
 **Sprint 1.2**:
+
 - [ ] Batch inference optimization
 - [ ] Dynamic batching
 - [ ] Quantization integration
@@ -326,6 +341,7 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 - [ ] Optimization documentation
 
 **Sprint 2.1**:
+
 - [ ] REST API
 - [ ] gRPC API
 - [ ] WebSocket support
@@ -333,6 +349,7 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 - [ ] API documentation
 
 **Sprint 2.2**:
+
 - [ ] Distributed tracing (OpenTelemetry)
 - [ ] Metrics dashboard
 - [ ] Centralized logging
@@ -347,12 +364,14 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 **Market Readiness**: [Assessment]
 
 ### If GO:
+
 - Proceed with production deployment
 - Announce release (date & channels)
 - Begin post-release support
 - Archive Phase 3 documentation
 
 ### If HOLD:
+
 - **Critical fixes required**:
   1. [Issue] - Owner: [@Name] - Deadline: [Date]
   2. [Issue] - Owner: [@Name] - Deadline: [Date]
@@ -378,15 +397,15 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 
 ## All Phase 3 Decisions
 
-| Date | Decision | Owner | Status | Link |
-|------|----------|-------|--------|------|
-| Jan 17 | Gate 1: Week 2 / Sprint 1.1 continuation | @ARCHITECT | ACTIVE | gate_1_week2_jan17.md |
-| Feb 3 | Gate 2: Sprint 1 completion / Sprint 2 start | @ARCHITECT | PENDING | gate_2_sprint1_feb3.md |
-| Feb 28 | Gate 3: Mid-phase checkpoint | @ARCHITECT | PENDING | gate_3_midphase_feb28.md |
-| May 3 | Gate 4: Production readiness | @ARCHITECT | PENDING | gate_4_production_readiness_may3.md |
-| [Date] | Architecture decision: [Name] | @ARCHITECT | [Status] | [Link] |
-| [Date] | Scope change: [Name] | @ARCHITECT | [Status] | [Link] |
-| [Date] | Resource allocation: [Name] | @ARCHITECT | [Status] | [Link] |
+| Date   | Decision                                     | Owner      | Status   | Link                                |
+| ------ | -------------------------------------------- | ---------- | -------- | ----------------------------------- |
+| Jan 17 | Gate 1: Week 2 / Sprint 1.1 continuation     | @ARCHITECT | ACTIVE   | gate_1_week2_jan17.md               |
+| Feb 3  | Gate 2: Sprint 1 completion / Sprint 2 start | @ARCHITECT | PENDING  | gate_2_sprint1_feb3.md              |
+| Feb 28 | Gate 3: Mid-phase checkpoint                 | @ARCHITECT | PENDING  | gate_3_midphase_feb28.md            |
+| May 3  | Gate 4: Production readiness                 | @ARCHITECT | PENDING  | gate_4_production_readiness_may3.md |
+| [Date] | Architecture decision: [Name]                | @ARCHITECT | [Status] | [Link]                              |
+| [Date] | Scope change: [Name]                         | @ARCHITECT | [Status] | [Link]                              |
+| [Date] | Resource allocation: [Name]                  | @ARCHITECT | [Status] | [Link]                              |
 
 ---
 
@@ -405,20 +424,26 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 **Contributors**: @APEX, @AXIOM
 
 ## Context
+
 [Explanation of the issue we're addressing and why it matters]
 
 ## Decision
+
 [Explanation of the decision that was made]
 
 ## Rationale
+
 [Explanation of why this was the best choice]
 
 ## Consequences
+
 [Explanation of the expected benefits and trade-offs]
 
 ## Alternatives Considered
+
 [List of alternatives and why they were rejected]
 ```
+````
 
 ---
 
@@ -432,7 +457,7 @@ Ready to begin Sprints 1.2, 2.1, 2.2 parallel execution?
 **Date**: [Date]  
 **Owner**: [@Name]  
 **Status**: ACTIVE / PENDING / COMPLETED  
-**Affected Teams**: [@Team1, @Team2]  
+**Affected Teams**: [@Team1, @Team2]
 
 ## Summary
 
@@ -461,30 +486,35 @@ Contact [@Name] or reply in GitHub issue [#XXX]
 ## Decision Lifecycle
 
 ### 1. Preparation (1-2 days before)
+
 - [ ] Gather data & metrics
 - [ ] Prepare proposal document
 - [ ] Share with stakeholders for pre-review
 - [ ] Identify key risks/trade-offs
 
 ### 2. Decision Meeting
+
 - [ ] Present options & recommendations
 - [ ] Discussion and Q&A
 - [ ] Final decision made
 - [ ] Sign-offs collected
 
 ### 3. Documentation (same day)
+
 - [ ] Log decision in decision log
 - [ ] Communicate to team
 - [ ] Update GitHub projects
 - [ ] Schedule follow-up actions
 
 ### 4. Implementation (following days/weeks)
+
 - [ ] Execute action items
 - [ ] Track progress
 - [ ] Report status in standups
 - [ ] Document lessons learned
 
 ### 5. Review (1-2 weeks after if major)
+
 - [ ] Assess impact of decision
 - [ ] Identify any issues
 - [ ] Course correction if needed
@@ -500,6 +530,7 @@ Contact [@Name] or reply in GitHub issue [#XXX]
 ## Risk Assessment
 
 ### Risk 1: [Name]
+
 - **Probability**: HIGH (70%) / MEDIUM (40%) / LOW (10%)
 - **Impact**: HIGH (>1 week delay) / MEDIUM (2-5 days) / LOW (<2 days)
 - **Exposure**: Probability × Impact
