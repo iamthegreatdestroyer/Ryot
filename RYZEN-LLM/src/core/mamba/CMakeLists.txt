@@ -32,7 +32,7 @@ if(MSVC)
     )
 else()
     target_compile_options(mamba_ssm PRIVATE
-        -Wall -Wextra -Werror
+        -Wall -Wextra -fexceptions
         -march=native
         -mavx512f
         -mavx512bw
