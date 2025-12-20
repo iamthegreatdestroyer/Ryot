@@ -26,6 +26,7 @@
 ### Team Structure Recommendation
 
 **Lean, Specialized Team Model:**
+
 - 6 core FTE (full-time equivalent)
 - 0.9 FTE support staff
 - Clear ownership boundaries
@@ -121,14 +122,14 @@ Design Phase (Days 1-3):
   [1.1.1] Design architecture → gates design phase
     ├─ PARALLEL: [1.1.2] Design tensor parallelism (2d)
     └─ PARALLEL: [1.1.3] Design orchestrator (2d)
-  
+
   Result: All designs done by day 5 (critical path only 3d, not sequential 7d)
 
 Implementation Phase (Days 5-12):
   [1.1.2] approved → [1.1.4] Tensor parallelism (4d)
   [1.1.3] approved → [1.1.5] Orchestrator (4d)
     └─ Can start [1.1.5] after [1.1.4] starts (dependency is soft)
-    
+
   PARALLEL: [1.1.6] Model loading (3d) - doesn't depend on above
 
   Result: Critical path 7d, not 12d
@@ -139,9 +140,9 @@ Testing Phase (Days 10-15):
     - [1.1.7] Unit tests tensor parallel (3d)
     - [1.1.8] Unit tests orchestrator (3d)
     - [1.1.9] E2E integration test (3d)
-  
+
   PARALLEL: [1.1.11] Architecture docs (2d)
-  
+
   Result: Critical path 3d for testing
 ```
 
@@ -186,7 +187,7 @@ Implementation Phase (Days 29-34):
   [1.3.1] done → [1.3.4] Load balancer (3d)
                 → [1.3.5] Health checks (3d)
                 → [1.3.6] Request batching (3d)
-  
+
   Can parallel [1.3.4] & [1.3.5] (independent)
   [1.3.6] depends on [1.3.4]
   [1.3.7] Adaptive routing depends on [1.3.5]
@@ -198,17 +199,17 @@ Result: Sprint 1.3 critical path ~10d
 
 ### Critical Path Timeline
 
-| Phase | Start | Duration | Finish | Buffer | Slack |
-| ----- | ----- | -------- | ------ | ------ | ----- |
-| Sprint 1.1 Design | Jan 1 | 5d | Jan 7 | - | - |
-| Sprint 1.1 Impl | Jan 7 | 7d | Jan 16 | - | - |
-| Sprint 1.1 Test/Integ | Jan 16 | 8d | Jan 28 | 2d | 2d |
-| Sprint 1.2 Design | Jan 9\* | 3d | Jan 12 | - | - |
-| Sprint 1.2 Impl | Jan 16\* | 9d | Jan 27 | - | - |
-| Sprint 1.2 Test/Integ | Jan 27 | 5d | Jan 31 | - | - |
-| Sprint 1.3 Design | Jan 23\* | 3d | Jan 26 | - | - |
-| Sprint 1.3 Impl | Jan 27\* | 9d | Feb 5 | - | SLIP |
-| Sprint 1.3 Test/Integ | Feb 5 | 5d | Feb 10 | - | 10d |
+| Phase                 | Start    | Duration | Finish | Buffer | Slack |
+| --------------------- | -------- | -------- | ------ | ------ | ----- |
+| Sprint 1.1 Design     | Jan 1    | 5d       | Jan 7  | -      | -     |
+| Sprint 1.1 Impl       | Jan 7    | 7d       | Jan 16 | -      | -     |
+| Sprint 1.1 Test/Integ | Jan 16   | 8d       | Jan 28 | 2d     | 2d    |
+| Sprint 1.2 Design     | Jan 9\*  | 3d       | Jan 12 | -      | -     |
+| Sprint 1.2 Impl       | Jan 16\* | 9d       | Jan 27 | -      | -     |
+| Sprint 1.2 Test/Integ | Jan 27   | 5d       | Jan 31 | -      | -     |
+| Sprint 1.3 Design     | Jan 23\* | 3d       | Jan 26 | -      | -     |
+| Sprint 1.3 Impl       | Jan 27\* | 9d       | Feb 5  | -      | SLIP  |
+| Sprint 1.3 Test/Integ | Feb 5    | 5d       | Feb 10 | -      | 10d   |
 
 \* Design can start earlier, but blocked by [1.1.5] at implementation
 
@@ -221,6 +222,7 @@ Result: Sprint 1.3 critical path ~10d
 ### Gating Task: Multi-GPU Orchestrator [1.1.5]
 
 **Why It's Critical:**
+
 - 13 tasks depend on this (directly or indirectly)
 - 4 downstream tasks are blocked until complete
 - Highest technical complexity
@@ -228,15 +230,16 @@ Result: Sprint 1.3 critical path ~10d
 
 **Technical Risks:**
 
-| Risk | Likelihood | Impact | Mitigation |
-| ---- | ---------- | ------ | ---------- |
-| torch.distributed API misunderstanding | Med | High | @APEX has deep experience, 3-day design phase |
-| GPU synchronization deadlocks | Low | Critical | Extensive unit testing, deadlock detection |
-| Memory fragmentation with orchestration | Med | High | Careful memory management, profiling |
-| Process management on multi-GPU | Low | Med | Proven patterns, Linux process API solid |
-| Scaling efficiency <85% target | Med | High | Optimization pass planned for later sprint |
+| Risk                                    | Likelihood | Impact   | Mitigation                                    |
+| --------------------------------------- | ---------- | -------- | --------------------------------------------- |
+| torch.distributed API misunderstanding  | Med        | High     | @APEX has deep experience, 3-day design phase |
+| GPU synchronization deadlocks           | Low        | Critical | Extensive unit testing, deadlock detection    |
+| Memory fragmentation with orchestration | Med        | High     | Careful memory management, profiling          |
+| Process management on multi-GPU         | Low        | Med      | Proven patterns, Linux process API solid      |
+| Scaling efficiency <85% target          | Med        | High     | Optimization pass planned for later sprint    |
 
 **Mitigation Strategy:**
+
 1. **Design Phase:** 3 days dedicated to architecture (not typical 1-2 days)
 2. **Code Review Early:** Architecture review after design, before implementation
 3. **Parallel Testing:** Unit tests written in parallel with implementation
@@ -245,6 +248,7 @@ Result: Sprint 1.3 critical path ~10d
 6. **Contingency:** @VELOCITY on-call for torch.distributed questions
 
 **Success Criteria:**
+
 - ✓ torch.distributed properly configured
 - ✓ Multi-GPU process management working
 - ✓ No deadlocks or synchronization issues
@@ -258,16 +262,19 @@ Result: Sprint 1.3 critical path ~10d
 ### Sprint 1.1 Decisions
 
 **Decision Point 1 (Jan 7):** Architecture Approved?
+
 - If YES → Proceed to implementation (expected)
 - If NO → 2-3 day rework, slip to Jan 9-10
 - **Impact:** 2-3 day delay in implementation
 
 **Decision Point 2 (Jan 16):** Tensor Parallel [1.1.4] Complete & Tested?
+
 - If YES → Start [1.1.5] orchestrator immediately
 - If NO → Cannot start [1.1.5] - blocks downstream
 - **Impact:** Every day late = one day delay in Sprint 1.2
 
 **Decision Point 3 (Jan 23):** Orchestrator [1.1.5] Complete & Performing Well?
+
 - If YES (Scaling efficiency >85%) → Sprint 1.2 can proceed as planned
 - If NO → Optimization pass required, delays Sprint 1.2 start
 - **Impact:** If delayed 3+ days, Sprint 1 misses Jan 31 deadline
@@ -275,12 +282,14 @@ Result: Sprint 1.3 critical path ~10d
 ### Sprint 1.2 Decisions
 
 **Decision Point 4 (Jan 26):** KV-Cache Implementation Performing?
+
 - Target: Memory reduction 40-50%, no coherency issues
 - If YES → Integration can proceed on schedule
 - If NO → Debug/optimization required, delays [1.2.14]
 - **Impact:** Delays Sprint 1.3 start
 
 **Decision Point 5 (Jan 29):** All Integration Tests Passing?
+
 - If YES → Code freeze as planned
 - If NO → Emergency bug fixes, potential date slip
 - **Impact:** Affects Phase 3 timeline
@@ -294,17 +303,20 @@ Result: Sprint 1.3 critical path ~10d
 #### 1. @APEX - Backend Lead & Distributed Systems (1.0 FTE)
 
 **Profile:**
+
 - Lead architect & primary implementer for distributed systems
 - Deep PyTorch & torch.distributed expertise
 - Proven track record with GPU systems
 
 **Responsibilities:**
+
 - **Lead:** Sprint 1.1 (all 3 sub-sprints focus area)
 - **Implement:** [1.1.1-1.1.5], [1.2.1]
 - **Review:** All distributed systems code
 - **Mentor:** @VELOCITY on distributed concepts
 
 **Sprint 1 Time Allocation:**
+
 - Weeks 1-2: 100% design & tensor parallelism implementation
 - Weeks 2-3: 100% orchestrator implementation & testing
 - Week 3: 50% code review & integration
@@ -313,6 +325,7 @@ Result: Sprint 1.3 critical path ~10d
 **Critical Path:** On critical path for 15+ days (Jan 1-16)
 
 **Success Factors:**
+
 - Uninterrupted focus on [1.1.1-1.1.5]
 - Daily code review/feedback from @ARCHITECT
 - Early performance validation
@@ -323,17 +336,20 @@ Result: Sprint 1.3 critical path ~10d
 #### 2. @VELOCITY - Performance Engineer (1.0 FTE)
 
 **Profile:**
+
 - Sub-linear algorithm & optimization specialist
 - Benchmark & profiling expert
 - Cache optimization specialist
 
 **Responsibilities:**
+
 - **Lead:** Sprint 1.2 (KV-cache optimization)
 - **Implement:** [1.1.6], [1.2.1-1.2.7]
 - **Validate:** All performance metrics
 - **Mentor:** @ECLIPSE on performance testing
 
 **Sprint 1 Time Allocation:**
+
 - Week 1-2: 40% distributed model loading [1.1.6]
 - Week 2: 60% performance validation of Sprint 1.1
 - Weeks 2-4: 100% KV-cache design & implementation [1.2.1-1.2.7]
@@ -342,6 +358,7 @@ Result: Sprint 1.3 critical path ~10d
 **Critical Path:** On critical path for 12+ days (Jan 16-27)
 
 **Success Factors:**
+
 - Detailed performance targets defined upfront
 - Access to GPU clusters for benchmarking
 - Ownership of cache compression strategy
@@ -352,17 +369,20 @@ Result: Sprint 1.3 critical path ~10d
 #### 3. @ECLIPSE - QA & Test Lead (1.0 FTE)
 
 **Profile:**
+
 - Testing & validation specialist
 - Chaos engineering expertise
 - Coverage enforcement advocate
 
 **Responsibilities:**
+
 - **Lead:** All testing & validation across sprints
 - **Implement:** [1.1.7-1.1.10], [1.2.8-1.2.11], [1.3.8-1.3.12]
 - **Standards:** 90%+ coverage enforcement
 - **Mentor:** @FORTRESS on chaos scenarios
 
 **Sprint 1 Time Allocation:**
+
 - Weeks 2-3: 60% unit & integration testing for Sprint 1.1
 - Week 3: 80% performance & chaos testing
 - Weeks 3-4: 100% KV-cache testing [1.2.8-1.2.11]
@@ -371,6 +391,7 @@ Result: Sprint 1.3 critical path ~10d
 **Critical Path:** Not on critical path (testing happens in parallel)
 
 **Success Factors:**
+
 - Early test plan development
 - Test infrastructure ready by Jan 1
 - Close collaboration with @VELOCITY on perf testing
@@ -381,17 +402,20 @@ Result: Sprint 1.3 critical path ~10d
 #### 4. @SYNAPSE - Integration Engineer (1.0 FTE)
 
 **Profile:**
+
 - API design & system integration specialist
 - Request routing & load balancing expert
 - Serving infrastructure experience
 
 **Responsibilities:**
+
 - **Lead:** Sprint 1.3 (load balancing & routing)
 - **Implement:** [1.3.1-1.3.7]
 - **Integrate:** [1.1.14], [1.2.14], [1.3.16]
 - **Design:** Load balancing & request routing
 
 **Sprint 1 Time Allocation:**
+
 - Weeks 1-2: 50% integration prep & design
 - Week 2-3: 30% assist with Sprint 1.1 integration [1.1.14]
 - Week 3: 20% assist with Sprint 1.2 integration [1.2.14]
@@ -400,6 +424,7 @@ Result: Sprint 1.3 critical path ~10d
 **Critical Path:** On critical path for 8+ days (Jan 27-31)
 
 **Success Factors:**
+
 - Early load balancing architecture work
 - Collaboration with @APEX on orchestrator API
 - Request batching strategy finalized early
@@ -410,17 +435,20 @@ Result: Sprint 1.3 critical path ~10d
 #### 5. @ARCHITECT - Systems Architect & Code Review Lead (0.5 FTE)
 
 **Profile:**
+
 - Architecture & design pattern expert
 - Code quality & design consistency champion
 - Mentoring & guidance role
 
 **Responsibilities:**
+
 - **Lead:** Code review & design validation
 - **Review:** [1.1.13], [1.2.13], [1.3.15]
 - **Guide:** Architectural decisions
 - **Mentor:** Code quality & design patterns
 
 **Sprint 1 Time Allocation:**
+
 - Weeks 1-2: 40% design review & guidance
 - Weeks 2-4: 30% code review activities
 - Week 4: 50% final verification & sign-off [1.3.17]
@@ -428,6 +456,7 @@ Result: Sprint 1.3 critical path ~10d
 **Critical Path:** Not on critical path (but gates code quality)
 
 **Success Factors:**
+
 - Early design document review
 - Clear architectural guidance for @APEX, @VELOCITY, @SYNAPSE
 - Design review meetings 2-3x per week
@@ -438,17 +467,20 @@ Result: Sprint 1.3 critical path ~10d
 #### 6. @SCRIBE - Documentation Lead (0.4 FTE)
 
 **Profile:**
+
 - Technical documentation specialist
 - Clear writing for APIs & architecture
 - Documentation infrastructure expert
 
 **Responsibilities:**
+
 - **Lead:** All documentation
 - **Write:** [1.1.11-1.1.12], [1.2.12], [1.3.13-1.3.14]
 - **Standards:** Documentation completeness & clarity
 - **Deliverables:** Architecture docs, API docs, guides
 
 **Sprint 1 Time Allocation:**
+
 - Weeks 1-3: 40% architecture & design documentation
 - Weeks 3-4: 50% API & specification documentation
 - Throughout: 20% inline documentation quality check
@@ -456,6 +488,7 @@ Result: Sprint 1.3 critical path ~10d
 **Critical Path:** Not on critical path (non-blocking)
 
 **Success Factors:**
+
 - Early doc drafting from design specs
 - Close collaboration with engineers for accuracy
 - Clear, accessible writing for all levels
@@ -470,6 +503,7 @@ Result: Sprint 1.3 critical path ~10d
 **Role:** Security considerations for distributed systems & failover
 
 **Sprint 1 Contribution:**
+
 - Week 1: 100% attend design reviews for security implications
 - Week 3: 100% security review of orchestrator & health checks
 - Week 4: 100% chaos testing oversight for security failures [1.3.11]
@@ -478,6 +512,7 @@ Result: Sprint 1.3 critical path ~10d
 **Tasks Owned:** [1.3.11] Chaos testing (co-owned with @ECLIPSE)
 
 **Success Factors:**
+
 - Design review attendance critical
 - Security threat model for distributed system
 - Failover security considerations
@@ -489,6 +524,7 @@ Result: Sprint 1.3 critical path ~10d
 **Role:** Secondary code review, developer mentoring
 
 **Sprint 1 Contribution:**
+
 - Weeks 2-4: 100% code review support
 - Weeks 1-4: 50% on-call for technical questions
 - Week 4: Secondary review of critical PRs
@@ -496,6 +532,7 @@ Result: Sprint 1.3 critical path ~10d
 **Tasks Owned:** Co-review on [1.1.13], [1.2.13], [1.3.15]
 
 **Success Factors:**
+
 - Rapid review turnaround (<24hrs)
 - Educational feedback in reviews
 - Architecture understanding
@@ -507,6 +544,7 @@ Result: Sprint 1.3 critical path ~10d
 **Role:** Infrastructure & CI/CD
 
 **Sprint 1 Contribution:**
+
 - Week 1: 100% test infrastructure setup
 - Weeks 1-4: 50% CI/CD maintenance & GPU allocation
 - Week 4: 100% production readiness infrastructure
@@ -514,6 +552,7 @@ Result: Sprint 1.3 critical path ~10d
 **Tasks Owned:** Implicit (supporting all testing tasks)
 
 **Success Factors:**
+
 - Multi-GPU test clusters provisioned
 - Automated testing pipelines
 - Performance monitoring infrastructure
@@ -523,30 +562,35 @@ Result: Sprint 1.3 critical path ~10d
 ### Team Communication Structure
 
 #### Daily Standups (9:00 AM, 15 min)
+
 - **Attendees:** All 6 core team
 - **Format:** 2 min per person (blockers, progress, next day)
 - **Owner:** @ARCHITECT facilitates
 - **Escalation:** Immediate discussion of blockers
 
 #### 3x Weekly Design Reviews (M/W/F, 10:00 AM, 45 min)
+
 - **Weeks 1-2:** Design validation
 - **Sprint 1.1 only:** [1.1.1], [1.1.2], [1.1.3]
 - **Attendees:** @APEX, @ARCHITECT, @FORTRESS
 - **Decision:** Approve or iterate on designs
 
 #### Weekly Sprint Planning (Mondays, 2:00 PM, 1 hr)
+
 - **Attendees:** All team
 - **Agenda:** Weekly priorities, blockers, adjustments
 - **Owner:** @ARCHITECT
 - **Decisions:** Priority shifts, timeline adjustments
 
 #### Weekly Retrospectives (Fridays, 4:00 PM, 30 min)
+
 - **Attendees:** All team
 - **Agenda:** What went well, what didn't, improvement actions
 - **Owner:** @ARCHITECT facilitates
 - **Outcomes:** Process improvements
 
 #### Ad-Hoc Integration Meetings (As needed)
+
 - **Sprint 1.1→1.2:** [1.1.5] → [1.2.1] handoff (Jan 9)
 - **Sprint 1.2→1.3:** [1.2.14] → [1.3.1] handoff (Jan 27)
 - **Attendees:** Primary owners
@@ -559,27 +603,29 @@ Result: Sprint 1.3 critical path ~10d
 
 ### FTE Summary
 
-| Role | FTE | Hours/Week | Sprint 1 Weeks |
-| ---- | --- | ---------- | -------------- |
-| @APEX | 1.0 | 40 | 4 weeks |
-| @VELOCITY | 1.0 | 40 | 4 weeks |
-| @ECLIPSE | 1.0 | 40 | 4 weeks |
-| @SYNAPSE | 1.0 | 40 | 4 weeks |
-| @ARCHITECT | 0.5 | 20 | 4 weeks |
-| @SCRIBE | 0.4 | 16 | 4 weeks |
-| **Core Total** | **5.9** | **236** | **4 weeks** |
-| @FORTRESS | 0.3 | 12 | 4 weeks |
-| @MENTOR | 0.3 | 12 | 4 weeks |
-| DevOps | 0.3 | 12 | 4 weeks |
-| **Support Total** | **0.9** | **36** | **4 weeks** |
-| **Grand Total** | **6.8** | **272** | **4 weeks** |
+| Role              | FTE     | Hours/Week | Sprint 1 Weeks |
+| ----------------- | ------- | ---------- | -------------- |
+| @APEX             | 1.0     | 40         | 4 weeks        |
+| @VELOCITY         | 1.0     | 40         | 4 weeks        |
+| @ECLIPSE          | 1.0     | 40         | 4 weeks        |
+| @SYNAPSE          | 1.0     | 40         | 4 weeks        |
+| @ARCHITECT        | 0.5     | 20         | 4 weeks        |
+| @SCRIBE           | 0.4     | 16         | 4 weeks        |
+| **Core Total**    | **5.9** | **236**    | **4 weeks**    |
+| @FORTRESS         | 0.3     | 12         | 4 weeks        |
+| @MENTOR           | 0.3     | 12         | 4 weeks        |
+| DevOps            | 0.3     | 12         | 4 weeks        |
+| **Support Total** | **0.9** | **36**     | **4 weeks**    |
+| **Grand Total**   | **6.8** | **272**    | **4 weeks**    |
 
 **Total Sprint 1 Budget:**
+
 - Core: 5.9 FTE × 4 weeks × $75K/FTE/year ÷ 52 = ~$22K
 - Support: 0.9 FTE × 4 weeks × $65K/FTE/year ÷ 52 = ~$2.2K
 - **Sprint 1 Cost:** ~$24K
 
 **Full Phase 3 (4 sprints):**
+
 - Core: 5.9 FTE × 24 weeks × $75K/year ÷ 52 = ~$161K
 - Support: 0.9 FTE × 24 weeks × $65K/year ÷ 52 = ~$27K
 - **Phase 3 Total:** ~$188K (within $250K-350K budget)
@@ -596,6 +642,7 @@ Result: Sprint 1.3 critical path ~10d
 | W4   | 15h   | 35h       | 40h      | 40h      | 20h        | 16h     |
 
 **Load Observations:**
+
 - Balanced across weeks (no excessive peaks)
 - @APEX heaviest in W1-2 (critical tasks)
 - @VELOCITY heaviest in W2-3 (KV-cache)
@@ -612,19 +659,21 @@ Result: Sprint 1.3 critical path ~10d
 
 **If [1.1.5] Slips 1 Week (Jan 23 finish instead of Jan 16):**
 
-| Impact | Mitigation | Effort |
-| ------ | ---------- | ------ |
-| Sprint 1.2 starts Jan 23 instead of Jan 9 | Design [1.2.1] while [1.1.5] finishing (ready to implement) | Already planned |
-| Sprint 1.3 starts Jan 30 instead of Jan 27 | Parallel design [1.3.1] while [1.2.14] finalizing | Requires 3 more days @SYNAPSE |
-| **Code freeze delayed to Feb 7** | Compress testing (risk!) or extend schedule | **Risk: Unacceptable** |
+| Impact                                     | Mitigation                                                  | Effort                        |
+| ------------------------------------------ | ----------------------------------------------------------- | ----------------------------- |
+| Sprint 1.2 starts Jan 23 instead of Jan 9  | Design [1.2.1] while [1.1.5] finishing (ready to implement) | Already planned               |
+| Sprint 1.3 starts Jan 30 instead of Jan 27 | Parallel design [1.3.1] while [1.2.14] finalizing           | Requires 3 more days @SYNAPSE |
+| **Code freeze delayed to Feb 7**           | Compress testing (risk!) or extend schedule                 | **Risk: Unacceptable**        |
 
 **Mitigation:**
+
 - ✓ Design Sprint 1.2 in parallel (no wait)
 - ✓ Have @VELOCITY ready to implement [1.2.4] immediately
 - ✓ Pre-write tests for [1.1.5] to parallelize testing
 - ✓ Do NOT compress testing for schedule pressure
 
 **Contingency:** If slip appears imminent (Jan 14):
+
 1. Bring @FORTRESS full-time to testing effort
 2. Reduce scope: baseline orchestrator without optimizations
 3. Move optimization to Sprint 2
@@ -636,20 +685,22 @@ Result: Sprint 1.3 critical path ~10d
 
 **If Team Member Unavailable:**
 
-| Member | Days Lost | Impact | Backup |
-| ------ | --------- | ------ | ------ |
-| @APEX (5+ days) | CRITICAL | [1.1.4], [1.1.5] blocked | No viable backup; delay unavoidable |
-| @VELOCITY (3+ days) | HIGH | KV-cache design blocked | @APEX can design, but delays |
-| @ECLIPSE (5+ days) | MEDIUM | Testing delayed | Cross-train @FORTRESS or @MENTOR |
-| @SYNAPSE (5+ days) | MEDIUM | Load balancing delayed | @APEX can co-design |
+| Member              | Days Lost | Impact                   | Backup                              |
+| ------------------- | --------- | ------------------------ | ----------------------------------- |
+| @APEX (5+ days)     | CRITICAL  | [1.1.4], [1.1.5] blocked | No viable backup; delay unavoidable |
+| @VELOCITY (3+ days) | HIGH      | KV-cache design blocked  | @APEX can design, but delays        |
+| @ECLIPSE (5+ days)  | MEDIUM    | Testing delayed          | Cross-train @FORTRESS or @MENTOR    |
+| @SYNAPSE (5+ days)  | MEDIUM    | Load balancing delayed   | @APEX can co-design                 |
 
 **Mitigation:**
+
 - ✓ Cross-training: @FORTRESS trained on distributed systems basics
 - ✓ @MENTOR ready to support code reviews if @ARCHITECT unavailable
 - ✓ Documentation: All design decisions documented (not tribal knowledge)
 - ✓ Pair programming: Complex tasks have observer role
 
 **Contingency:** No single-point-of-failure roles:
+
 - @VELOCITY is closest (KV-cache expert)
 - Backup: @APEX understands cache optimization enough to guide
 - Documented decision rationale in all design docs
@@ -701,17 +752,20 @@ Result: Sprint 1.3 critical path ~10d
 ## TRANSITION TO SPRINT 2
 
 **Sprint 2 Focus Areas:** Advanced Inference Optimization
+
 - Speculation & prefetching
 - Dynamic batching refinement
 - Model quantization & pruning
 - Advanced serving patterns
 
 **Dependencies from Sprint 1:**
+
 - Distributed inference foundation ([1.1.14] integration)
 - KV-cache optimization ([1.2.14] integration)
 - Load balancing & routing ([1.3.16] integration)
 
 **Handoff Requirements:**
+
 - [ ] All Sprint 1 code merged to main
 - [ ] Performance baselines documented
 - [ ] Integration tested end-to-end

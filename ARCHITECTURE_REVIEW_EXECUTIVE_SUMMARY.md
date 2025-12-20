@@ -11,7 +11,7 @@
 
 ### Quick Verdict
 
-The **PHASE_3_SPRINT_PLAN defines a sound, achievable distributed inference architecture**. 
+The **PHASE_3_SPRINT_PLAN defines a sound, achievable distributed inference architecture**.
 
 - **Row-wise tensor parallelism** + **head-wise KV-cache sharding** + **sticky-session load balancing** = **correct design**
 - **4-sprint progression** is logically coherent
@@ -24,14 +24,17 @@ The **PHASE_3_SPRINT_PLAN defines a sound, achievable distributed inference arch
 ## THE 30-SECOND SUMMARY
 
 **What We're Building**:
+
 > A production-grade distributed inference system that runs LLM inference on 4 GPUs in parallel, achieving 3.8x speedup and 4x longer context windows, with <5-8ms communication overhead per synchronization.
 
 **How It Works**:
+
 1. **Row-wise tensor parallelism**: Each GPU holds 1/4 of model weights, computes 1/4 of outputs
 2. **Head-wise KV-cache sharding**: Each GPU stores specific attention heads' cache (zero communication)
 3. **Sticky-session load balancing**: User sessions route to same GPU (preserves cache context)
 
 **Why It Works**:
+
 - Neural network compute is 90% of time, communication is 10%
 - All-reduce synchronization costs ~5-8ms per layer
 - Total overhead <10% → 3.8x speedup achievable
@@ -50,7 +53,7 @@ The **PHASE_3_SPRINT_PLAN defines a sound, achievable distributed inference arch
 |--------|----------|----------|----------|
 | Communication overhead | 5-8ms | 15-20ms | 10-15ms |
 | Implementation complexity | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Memory per GPU | 7GB | 14GB | 4GB* |
+| Memory per GPU | 7GB | 14GB | 4GB\* |
 | Speedup @ 4 GPU | 3.8x | 3.2x | 3.5x |
 | Proven for inference | ✅ Yes | ⚠️ Pipelined | ❌ Overkill |
 
@@ -63,6 +66,7 @@ The **PHASE_3_SPRINT_PLAN defines a sound, achievable distributed inference arch
 **Decision**: Head-wise KV-cache sharding (natural result of row-wise TP)
 
 **Why Elegant**:
+
 ```
 Property: Attention heads are independent
 Result:   Each GPU stores different heads' cache
@@ -100,7 +104,8 @@ Sprint 4: Advanced Features (Batching, Quantization, Scheduling)
 
 ### 🔴 Gap #1: KV-Cache Compression Strategy Vague (Sprint 1.2)
 
-**What's Missing**: 
+**What's Missing**:
+
 - When is compression applied? (immediately or lazy?)
 - Decompression overhead? (acceptable on inference path?)
 - Algorithm details? (fp8 quantization, per-head or per-token?)
@@ -116,11 +121,13 @@ Sprint 4: Advanced Features (Batching, Quantization, Scheduling)
 ### 🔴 Gap #2: Load Balancing + KV-Cache Coupling Undefined (Sprint 1.3)
 
 **The Conflict**:
+
 - **Load balancer** wants to distribute requests to least-loaded GPU (stateless routing)
 - **KV-cache** is GPU-rank-specific state (needs affinity)
 - **Multi-turn conversations** need context preservation (can't switch GPUs)
 
 **What's Missing**:
+
 - How do load balancer + distributed state coordinate?
 - What happens if user's preferred GPU is overloaded?
 - Failover when GPU fails mid-conversation?
@@ -138,6 +145,7 @@ Sprint 4: Advanced Features (Batching, Quantization, Scheduling)
 ### 🔴 Gap #3: Communication Overhead Not Validated (Sprint 1.1)
 
 **What's Missing**:
+
 - Plan assumes <10% communication overhead
 - No benchmarks on actual target hardware
 - NCCL latencies measured theoretically, not practically
@@ -146,6 +154,7 @@ Sprint 4: Advanced Features (Batching, Quantization, Scheduling)
 **Impact**: May discover Week 2 that speedup target is impossible.
 
 **Mitigation**: Add benchmark task to Sprint 1.1 Week 1:
+
 - Measure NCCL all-reduce latency on 4 GPUs
 - Run toy model inference, measure actual speedup
 - Validate assumptions or adjust targets
@@ -161,11 +170,12 @@ Sprint 4: Advanced Features (Batching, Quantization, Scheduling)
 **Problem**: Each user's KV-cache belongs to one GPU rank. If load balancer routes next request to different GPU, context is lost.
 
 **Scenario**:
+
 ```
 User: "Hello, how are you?"
   Request routes to GPU 0
   KV-cache grows on GPU 0
-  
+
 User: "What's your name?"
   Load balancer routes to GPU 3 (more available)
   GPU 3 has no context from previous message
@@ -185,17 +195,19 @@ User: "What's your name?"
 **Problem**: Actual NCCL communication latencies might exceed <10% assumption.
 
 **Reality Check**:
+
 ```
 Per-token inference (Llama2-7B):
   Forward compute:  ~40ms
   All-reduce sync:  ~8ms (not <5ms)
   All-gather sync:  ~8ms
   Overhead:         20ms / (40+20) = 33% (not <10%!)
-  
+
 Calculated speedup: 1 / (1 - 0.33 + 0.33/4) ≈ 2.4x (not 3.8x!)
 ```
 
-**Mitigation**: 
+**Mitigation**:
+
 1. Week 1: Benchmark actual NCCL latencies
 2. Week 2: Run toy model, measure real speedup
 3. If shortfall: optimize communication (overlap compute/comm) or revise targets
@@ -207,6 +219,7 @@ Calculated speedup: 1 / (1 - 0.33 + 0.33/4) ≈ 2.4x (not 3.8x!)
 ### Risk #3: Operational Complexity Underestimated 🟠 MEDIUM
 
 **Problem**: Debugging distributed system is exponentially harder than single-GPU:
+
 - Rank-specific behavior
 - Timing-dependent bugs (NCCL race conditions)
 - Communication hangs (deadlocks)
@@ -237,6 +250,7 @@ Calculated speedup: 1 / (1 - 0.33 + 0.33/4) ≈ 2.4x (not 3.8x!)
 > "Before implementing Load Balancer (Sprint 1.3) and KV-cache Compression (Sprint 1.2), we need to finalize two architecture decisions. Both are resolvable in 3-4 days of focused design work. Don't wait - finalize these in parallel with Sprint 1.1 implementation."
 
 **ADRs Needed**:
+
 1. **ADR-002**: How to compress KV-cache (when, algorithm, decompression latency)
 2. **ADR-003**: How to balance load + preserve cache context (sticky sessions recommended)
 
@@ -257,6 +271,7 @@ Calculated speedup: 1 / (1 - 0.33 + 0.33/4) ≈ 2.4x (not 3.8x!)
 **Can Start Monday**: ✅ Yes
 
 **Conditions**:
+
 1. ✅ Architecture understood (DISTRIBUTED_ARCHITECTURE.md provides theory)
 2. ✅ Tensor parallelism algorithm is clear
 3. ⚠️ Finalize ADR-002 by Dec 27 (for Sprint 1.2 start)
@@ -266,33 +281,39 @@ Calculated speedup: 1 / (1 - 0.33 + 0.33/4) ≈ 2.4x (not 3.8x!)
 ### What @APEX Needs to Start
 
 **Immediately Available**:
+
 - ✅ DISTRIBUTED_ARCHITECTURE.md (theory foundation)
 - ✅ Tensor parallelism algorithm (sections 1-2)
 - ✅ Weight sharding strategy (section 4)
 - ✅ Synchronization model (section 6)
 
 **Needed by Dec 27**:
+
 - ⚠️ ADR-002 (KV-cache compression) - affects Sprint 1.2
 - ⚠️ ADR-003 (Load balancing) - affects Sprint 1.3
 
 **Needed by Week 1**:
+
 - ⚠️ NCCL latency benchmarks (validate 5-8ms assumption)
 - ⚠️ Speedup measurement on 4 GPU (validate 3.8x target)
 
 ### Success Criteria (End of Sprint 1.1)
 
 **Code**:
+
 - ✅ Tensor parallel layers implemented
 - ✅ Multi-GPU orchestration working
 - ✅ Forward pass correctness validated vs single GPU
 - ✅ Speedup measured: >3.0x minimum, 3.8x target
 
 **Design**:
+
 - ✅ ADR-002 finalized (KV-cache compression)
 - ✅ ADR-003 finalized (Load balancing)
 - ✅ DISTRIBUTED_ARCHITECTURE.md updated with final design
 
 **Knowledge**:
+
 - ✅ Team understands distributed inference design
 - ✅ Can explain row-wise tensor parallelism to others
 - ✅ Can debug distributed inference issues
@@ -304,6 +325,7 @@ Calculated speedup: 1 / (1 - 0.33 + 0.33/4) ≈ 2.4x (not 3.8x!)
 ### @APEX (Implementation Lead)
 
 **Architecture Design**:
+
 ```
 You are responsible for implementing the distributed inference system.
 Core algorithms are documented in DISTRIBUTED_ARCHITECTURE.md.
@@ -313,11 +335,13 @@ You will resolve implementation details during Sprint 1.1.
 ```
 
 **Decisions You Need to Make** (by Dec 27):
+
 1. KV-cache compression algorithm details (ADR-002)
 2. Weight distribution algorithm edge cases
 3. Error handling & recovery strategies
 
 **Weekly Architecture Review Focus** (Sundays 6pm):
+
 - Week 1: Tensor parallelism correctness, NCCL latency benchmarks
 - Week 2: Full model inference working, speedup validated
 - Week 3: Readiness for Sprint 1.2 start
@@ -327,6 +351,7 @@ You will resolve implementation details during Sprint 1.1.
 ### @FLUX (Infrastructure/DevOps)
 
 **Your Role**:
+
 ```
 You will set up distributed testing infrastructure.
 You will create CI/CD pipelines for distributed testing.
@@ -334,11 +359,13 @@ You will set up monitoring/observability in Sprint 3.
 ```
 
 **Needed from You** (Dec 23-27):
+
 1. 4-GPU test environment ready (local or cloud)
 2. PyTorch distributed testing setup
 3. Infrastructure for distributed benchmarking
 
 **Key Dependency**:
+
 - Sprint 1.1 produces distributed inference code
 - Sprint 2 requires serving infrastructure (FastAPI, gRPC)
 - Sprint 3 requires monitoring infrastructure (Prometheus, Grafana)
@@ -348,6 +375,7 @@ You will set up monitoring/observability in Sprint 3.
 ### @VELOCITY (Performance Optimization)
 
 **Your Role**:
+
 ```
 You will validate communication overhead assumptions.
 You will measure actual NCCL latencies.
@@ -355,11 +383,13 @@ You will identify optimization opportunities.
 ```
 
 **Week 1 Tasks** (Critical Path):
+
 1. Benchmark NCCL all-reduce on 4 GPUs (actual latency)
 2. Profile toy model inference (measure actual speedup)
 3. Identify bottlenecks (compute vs. communication)
 
 **Later (Sprint 1.2-1.3)**:
+
 - Optimize communication overhead (overlap compute/comm)
 - Optimize KV-cache compression (decompression latency)
 - Fine-tune batch scheduling
@@ -369,6 +399,7 @@ You will identify optimization opportunities.
 ### @SENTRY (Observability)
 
 **Your Role**:
+
 ```
 You will design distributed debugging & observability.
 You will set up logging, tracing, and profiling.
@@ -376,11 +407,13 @@ You will create runbooks for common debugging tasks.
 ```
 
 **When Needed**:
+
 - Sprint 2.1: Start observability design (ADR-004)
 - Sprint 3.1: Implement monitoring infrastructure
 - Sprint 3.2: Implement distributed tracing
 
 **Early Planning** (Dec 23-27):
+
 - How should we aggregate logs from 4 ranks?
 - How should we trace requests through distributed system?
 - Which profiling tools work with distributed PyTorch?
@@ -416,18 +449,18 @@ You will create runbooks for common debugging tasks.
 
 ## SUMMARY SCORECARD
 
-| Dimension                     | Score | Status         |
-|-------------------------------|-------|----------------|
-| **Architecture Sound**        | 9/10  | ✅ Excellent   |
-| **Design Clarity**            | 7/10  | ⚠️ Needs ADRs  |
-| **Team Readiness**            | 8/10  | ✅ Good        |
-| **Documentation**             | 7/10  | ⚠️ Incomplete  |
-| **Risk Identified**           | 8/10  | ✅ Good        |
-| **Risk Mitigations**          | 7/10  | ✅ Adequate    |
-| **Implementation Readiness**  | 8/10  | ✅ Good        |
-| **Production Readiness**      | 5/10  | ⚠️ Early stage |
-| **Team Velocity Potential**   | 8/10  | ✅ Good        |
-| **Estimated Success Rate**    | 8/10  | ✅ High        |
+| Dimension                    | Score | Status         |
+| ---------------------------- | ----- | -------------- |
+| **Architecture Sound**       | 9/10  | ✅ Excellent   |
+| **Design Clarity**           | 7/10  | ⚠️ Needs ADRs  |
+| **Team Readiness**           | 8/10  | ✅ Good        |
+| **Documentation**            | 7/10  | ⚠️ Incomplete  |
+| **Risk Identified**          | 8/10  | ✅ Good        |
+| **Risk Mitigations**         | 7/10  | ✅ Adequate    |
+| **Implementation Readiness** | 8/10  | ✅ Good        |
+| **Production Readiness**     | 5/10  | ⚠️ Early stage |
+| **Team Velocity Potential**  | 8/10  | ✅ Good        |
+| **Estimated Success Rate**   | 8/10  | ✅ High        |
 
 **Overall**: 7.7/10 - **READY FOR EXECUTION**
 
@@ -438,6 +471,7 @@ You will create runbooks for common debugging tasks.
 **Recommendation**: **🟡 CONDITIONAL GO - PROCEED WITH SPRINT 1.1**
 
 **Conditions**:
+
 1. Finalize ADR-002 & ADR-003 by Dec 27 ← **Must do**
 2. Team understands row-wise TP strategy ← **Education needed**
 3. Benchmark NCCL Week 1 of Sprint 1.1 ← **Plan task**
@@ -448,9 +482,10 @@ You will create runbooks for common debugging tasks.
 
 **Prepared by**: @ARCHITECT (Systems Architecture & Design)  
 **Date**: December 20, 2025  
-**Status**: READY FOR IMMEDIATE TEAM DISTRIBUTION  
+**Status**: READY FOR IMMEDIATE TEAM DISTRIBUTION
 
-**Distribute to**: 
+**Distribute to**:
+
 - [ ] @APEX (Implementation Lead)
 - [ ] @FLUX (Infrastructure)
 - [ ] @VELOCITY (Performance)

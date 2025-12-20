@@ -56,11 +56,13 @@
 ### By Monday, Dec 23 (9am) - Team Kickoff
 
 - [ ] **All team members read**:
+
   - DISTRIBUTED_ARCHITECTURE.md sections 1-2 (theory)
   - ARCHITECTURE_ASSESSMENT_PHASE3.md (findings)
   - CRITICAL_ADRS_SPRINT1.md (decisions needed)
 
 - [ ] **@APEX understands**:
+
   - Row-wise tensor parallelism strategy
   - Weight sharding algorithm
   - How KV-cache sharding works
@@ -77,18 +79,21 @@
 ### Week 1 Checkpoint (Friday, Dec 27)
 
 **Code Deliverables**:
+
 - [ ] `src/distributed/tensor_parallel.py` - Core TP layers (200+ LOC)
 - [ ] `src/distributed/orchestrator.py` - Rank management (150+ LOC)
 - [ ] Unit tests for tensor parallel layers (80%+ coverage)
 - [ ] Weight distribution algorithm working end-to-end
 
 **Validation**:
+
 - [ ] Single linear layer TP works on 2 GPUs (baseline)
 - [ ] Weight sharding verified correct (values match theory)
 - [ ] All-reduce synchronization working (timings <5ms)
 - [ ] NCCL communication benchmarked
 
 **Decision Updates**:
+
 - [ ] ADR-002 (KV-cache) finalized
 - [ ] ADR-003 (Load balancing) finalized
 - [ ] Risk mitigation plan created
@@ -96,23 +101,27 @@
 ### Week 2 Checkpoint (Friday, Jan 3)
 
 **Code Deliverables**:
+
 - [ ] Full model distributed inference working (4 GPUs)
 - [ ] Forward pass validated vs. single-GPU baseline
 - [ ] Gradient computation tested (if training mode)
 - [ ] Distributed model loading from checkpoint
 
 **Validation**:
+
 - [ ] 4-GPU speedup measured: 3.0x minimum, 3.8x target
 - [ ] Scaling efficiency >85%
 - [ ] Output correctness verified (numerical precision)
 - [ ] Startup time <1 second
 
 **Documentation**:
+
 - [ ] DISTRIBUTED_ARCHITECTURE.md finalized
 - [ ] Weight distribution algorithm documented
 - [ ] Integration guide for Phase 2 components
 
 **Ready for Sprint 1.2**:
+
 - [ ] KV-cache sharding design finalized
 - [ ] Can proceed with Sprint 1.2 immediately
 
@@ -133,11 +142,11 @@ Code Templates:
 Hardware:
   ⚠️ 4-GPU setup (A100/H100 preferred, not essential yet)
   ⚠️ Can start with 2-GPU to validate design
-  
+
 Testing Framework:
   ⚠️ PyTorch distributed testing utils
   ⚠️ Custom correctness checker (provided)
-  
+
 Reference:
   ✅ PyTorch distributed documentation
   ✅ NCCL collective operations reference
@@ -192,6 +201,7 @@ Reference:
 ### Weekly Sync Topics
 
 **Week 1 Sync (2025-12-27, Friday)**:
+
 1. Tensor parallelism implementation complete?
 2. NCCL benchmarks match expectations?
 3. Weight sharding algorithm working?
@@ -199,6 +209,7 @@ Reference:
 5. ADR-002 & ADR-003 finalized?
 
 **Week 2 Sync (2025-01-03, Friday)**:
+
 1. Full 4-GPU model inference working?
 2. Speedup measured? (target 3.8x, minimum 3.0x)
 3. Output correctness validated?
@@ -240,6 +251,7 @@ Reference:
 **What**: Actual NCCL latencies might be higher than theoretical 5-8ms.
 
 **Mitigation**:
+
 - [ ] **Week 1 Task**: Benchmark NCCL all-reduce on target hardware
   - Run 10x all-reduce with 4GB payload (typical)
   - Measure min/max/median latency
@@ -252,6 +264,7 @@ Reference:
 **What**: 3.8x speedup might be optimistic if communication costs higher than expected.
 
 **Mitigation**:
+
 - [ ] **Week 1 Task**: Run toy model (125M param) inference on 4 GPUs
   - Single-GPU baseline: N tokens/sec
   - 4-GPU distributed: M tokens/sec
@@ -264,6 +277,7 @@ Reference:
 **What**: Pseudo code in DISTRIBUTED_ARCHITECTURE.md might not be specific enough.
 
 **Mitigation**:
+
 - [ ] **Week 1 Task**: Implement weight distribution, test on small model
 - [ ] If issues: flag and iterate on algorithm spec
 - [ ] Document final algorithm for future reference
@@ -290,11 +304,9 @@ Before Sprint 1.2 kicks off:
 - [ ] ADR-002 (KV-cache compression) MUST be finalized
   - Compression algorithm decided
   - Decompression latency budget allocated
-  
 - [ ] Tensor parallel layers proven correct on 4 GPUs
   - Output matches single-GPU baseline
   - Speedup >3.0x validated
-  
 - [ ] Team understands distributed inference architecture
   - Can answer questions about rank synchronization
   - Can debug distributed inference issues
@@ -333,6 +345,7 @@ Before Sprint 1.2 kicks off:
 **Decision**: Proceed with Sprint 1.1 kickoff.
 
 **Conditions**:
+
 1. Finalize ADR-002 & ADR-003 by Dec 27 (can do in parallel with implementation)
 2. Benchmark NCCL latencies in Week 1 (validate assumptions)
 3. Measure actual speedup by Week 2 (confirm target achievable)
@@ -346,7 +359,7 @@ Before Sprint 1.2 kicks off:
 **Prepared by**: @ARCHITECT  
 **Reviewed by**: [Team leads sign off]  
 **Approval**: [PM/Tech Lead approval]  
-**GO/NO-GO Call**: [Decision maker signs off]  
+**GO/NO-GO Call**: [Decision maker signs off]
 
 ---
 

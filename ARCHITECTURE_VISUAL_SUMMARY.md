@@ -99,7 +99,7 @@ Forward pass computes: Q @ K^T @ V
 
 For long sequences (32K tokens):
   Single GPU: K + V cache = 32K × 32 heads × 128 dims × 2 bytes = 256MB per request
-  
+
 With 100 concurrent requests:
   Total cache size = 100 × 256MB = 25.6GB (exceeds single GPU!)
 
@@ -129,7 +129,7 @@ MAGIC: Attention heads are INDEPENDENT!
   - GPU 1 computes: Q_1 @ K_1^T @ V_1 (independent)
   - GPU 2 computes: Q_2 @ K_2^T @ V_2 (independent)
   - GPU 3 computes: Q_3 @ K_3^T @ V_3 (independent)
-  
+
   Final output: concat([out_0, out_1, out_2, out_3])
 
 RESULT:
@@ -153,17 +153,17 @@ Layer N (Linear):
   ├─ GPU 1: compute y_1 = x @ W_1^T
   ├─ GPU 2: compute y_2 = x @ W_2^T
   └─ GPU 3: compute y_3 = x @ W_3^T
-  
+
   Sync:   all_reduce (y_0 + y_1 + y_2 + y_3)  [costs ~8ms]
   Output: full output on all GPUs
-  
+
 Layer N+1 (Attention):
   Input:  replicated (from previous layer)
   ├─ GPU 0: Q_0 @ K_0^T @ V_0  [independent, no sync]
   ├─ GPU 1: Q_1 @ K_1^T @ V_1  [independent, no sync]
   ├─ GPU 2: Q_2 @ K_2^T @ V_2  [independent, no sync]
   └─ GPU 3: Q_3 @ K_3^T @ V_3  [independent, no sync]
-  
+
   Output: replicated across GPUs (no extra sync needed)
 
 ═══════════════════════════════════════════════════════════════
@@ -217,7 +217,7 @@ User Request #2: "What's your name?"
                     │ Routed to GPU 0 ────────┤ (load balanced)
                [GPU 0 has NO CONTEXT]         │
                Previous message on GPU 1!     │
-               
+
                PROBLEM: Response doesn't include context!
                → Inference produces nonsensical output
 ```
@@ -229,12 +229,12 @@ OPTION A: STICKY SESSIONS (Recommended)
 ═════════════════════════════════════════
 
   hash(user_id) → GPU rank (deterministic)
-  
+
   Request #1: "Hello..."
     → hash("user_123") % 4 = 0
     → Route to GPU 0
     → KV-cache stored on GPU 0
-  
+
   Request #2: "What's your..."
     → hash("user_123") % 4 = 0
     → Route to GPU 0 (always same GPU)
@@ -247,12 +247,12 @@ OPTION B: DISTRIBUTED CACHE (Complex, Expensive)
 ═════════════════════════════════════════════════
 
   All GPUs maintain identical KV-cache
-  
+
   Request #1: "Hello..."
     → Route to GPU 0
     → Compute + store in local GPU 0 cache
     → Broadcast cache updates to GPU 1, 2, 3
-  
+
   Request #2: "What's your..."
     → Route to GPU 3 (best load)
     → GPU 3 already has cache (all GPUs synced)
@@ -266,12 +266,12 @@ OPTION C: CENTRALIZED CACHE SERVER (Complex, New Dependency)
 ═════════════════════════════════════════════════════════════
 
   External Redis/Memcached stores KV-cache
-  
+
   Request #1: "Hello..."
     → Route to GPU 0
     → Compute
     → Store cache in Redis
-  
+
   Request #2: "What's your..."
     → Route to GPU 3 (best load)
     → Fetch cache from Redis
@@ -282,6 +282,7 @@ OPTION C: CENTRALIZED CACHE SERVER (Complex, New Dependency)
 ```
 
 **Recommendation for Phase 3**: **OPTION A (Sticky Sessions)**
+
 - Simplest implementation
 - Acceptable load imbalance (<10%)
 - Can upgrade to OPTION C later if needed
@@ -317,7 +318,7 @@ OPTION C: CENTRALIZED CACHE SERVER (Complex, New Dependency)
     ├─ REST API            ├─ Monitoring          ├─ Batching
     ├─ WebSocket          ├─ Tracing             ├─ Quantization
     └─ gRPC               └─ Resilience          └─ Scheduling
-    
+
     Depends on:           Depends on:            Depends on:
     Sprint 1 ✓            Sprint 1-2 ✓           Sprint 1-3 ✓
 ```
@@ -371,10 +372,10 @@ LIKELIHOOD ↑
            │                       OPERATIONAL
            │                       COMPLEXITY
            │
-         L │   
+         L │
            │
            └─────────────────────────────────────→ IMPACT
-                                                   
+
 SUMMARY:
 ────────
 🔴 HIGH (must mitigate before Sprint 1.3)
@@ -468,7 +469,7 @@ No show-stoppers.
 
 ```
                           ✅ YES      ⚠️ MAYBE    ❌ NO
-                          
+
 Architecture sound?       ✅
 Design clarity?           ────────────⚠️
 Documentation complete?   ────────────⚠️
@@ -486,6 +487,7 @@ VERDICT: 🟡 CONDITIONAL GO - Proceed with Sprint 1.1
 ---
 
 **For More Details**:
+
 - ARCHITECTURE_ASSESSMENT_PHASE3.md (comprehensive analysis)
 - CRITICAL_ADRS_SPRINT1.md (decision templates)
 - SPRINT_1.1_KICKOFF_CHECKLIST.md (execution checklist)

@@ -11,18 +11,21 @@
 This manifest contains templates for all Sprint 1 GitHub issues in a standardized format. To implement:
 
 ### Option A: Manual Import (10-15 min)
+
 1. Open GitHub Issues → New Issue
 2. Copy title & description from templates below
 3. Add labels, assignee, milestone
 4. Set to GitHub Project board
 
 ### Option B: Bulk Import (Recommended)
+
 1. Export this markdown to JSON using GitHub CLI tool
 2. Use `gh issue create` bulk script
 3. Automatically adds labels, milestones, project board
 4. Completes in <5 minutes
 
 ### Option C: GitHub Projects Native (Fastest)
+
 1. Create GitHub Project board (follow GITHUB_PROJECTS_PHASE3_SETUP.md)
 2. Use "Add item" in board, copy paste titles
 3. Fill in descriptions as issues are started
@@ -945,6 +948,7 @@ milestone: "Sprint 1.1"
 - [1.2.14] Integration with inference pipeline
 
 **Note:** Issue templates for Sprint 1.2 follow same structure as Sprint 1.1 with:
+
 - Updated issue numbers [1.2.X]
 - KV-cache specific requirements & acceptance criteria
 - Similar effort estimates (5-13 story points)
@@ -977,6 +981,7 @@ milestone: "Sprint 1.1"
 - [1.3.17] Sprint 1 final verification & sign-off
 
 **Note:** Issue templates for Sprint 1.3 follow same structure with:
+
 - Updated issue numbers [1.3.X]
 - Load balancing specific requirements
 - Chaos testing emphasis [1.3.11]
@@ -1039,33 +1044,40 @@ name: Sprint Task
 about: Standard Sprint 1 task template
 title: "[SPRINT-X.X] "
 labels: sprint-1
-assignees: ''
+assignees: ""
 ---
 
 ## Task Description
+
 [One-sentence task description]
 
 ## Requirements
+
 - [ ] Requirement 1
 - [ ] Requirement 2
 
 ## Acceptance Criteria
+
 - [ ] Criteria 1
 - [ ] Criteria 2
 
 ## Deliverables
+
 - Deliverable 1
 
 ## Dependencies
-- Blocks: 
+
+- Blocks:
 - Depends on:
 - Blocked by:
 
 ## Estimated Effort
-- [X] story points
-- [X] day(s) duration
+
+- [x] story points
+- [x] day(s) duration
 
 ## Related
+
 - Epic: sprint-1.X
 ```
 
@@ -1101,16 +1113,19 @@ jobs:
 ### Week of Dec 20-24
 
 1. **Create GitHub Labels**
+
    - Run label creation script in repo settings
    - Total: 16 labels created
 
 2. **Create Milestones**
+
    - Sprint 1 (Jan 1-31)
    - Sprint 1.1 (Jan 1-16)
    - Sprint 1.2 (Jan 16-27)
    - Sprint 1.3 (Jan 27-31)
 
 3. **Create GitHub Project**
+
    - Use "Table" template
    - Add custom fields
    - Configure automation

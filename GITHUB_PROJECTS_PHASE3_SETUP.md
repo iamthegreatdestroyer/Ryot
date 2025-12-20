@@ -70,9 +70,11 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 **Epic:** Design and implement foundation for distributed tensor parallel inference
 
 **Dependencies:**
+
 - None (Sprint 1.1 is independent)
 
 **Critical Path Items:**
+
 - Tensor parallelism architecture must be finalized before Sprint 1.2 KV-cache work
 - Multi-GPU orchestrator completion blocks all downstream tasks
 
@@ -81,6 +83,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Planning & Design
 
 - **[1.1.1] Design distributed inference architecture**
+
   - Type: Design Task
   - Assignee: @APEX (Backend Lead)
   - Priority: CRITICAL
@@ -96,6 +99,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: None
 
 - **[1.1.2] Design tensor parallelism strategy**
+
   - Type: Design Task
   - Assignee: @APEX
   - Priority: CRITICAL
@@ -126,6 +130,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Implementation
 
 - **[1.1.4] Implement tensor parallelism layer**
+
   - Type: Feature Implementation
   - Assignee: @APEX
   - Priority: CRITICAL
@@ -141,6 +146,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: None
 
 - **[1.1.5] Implement multi-GPU orchestrator**
+
   - Type: Feature Implementation
   - Assignee: @APEX
   - Priority: CRITICAL
@@ -172,6 +178,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Testing & Validation
 
 - **[1.1.7] Unit tests - tensor parallelism**
+
   - Type: Test Implementation
   - Assignee: @ECLIPSE (QA Lead)
   - Priority: CRITICAL
@@ -186,6 +193,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: None
 
 - **[1.1.8] Unit tests - orchestrator**
+
   - Type: Test Implementation
   - Assignee: @ECLIPSE
   - Priority: CRITICAL
@@ -200,6 +208,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: None
 
 - **[1.1.9] Integration test - distributed inference end-to-end**
+
   - Type: Integration Test
   - Assignee: @ECLIPSE
   - Priority: CRITICAL
@@ -231,6 +240,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Documentation
 
 - **[1.1.11] Write distributed architecture documentation**
+
   - Type: Documentation
   - Assignee: @SCRIBE (Documentation Lead) / @APEX
   - Priority: HIGH
@@ -261,6 +271,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Review & Integration
 
 - **[1.1.13] Code review - distributed inference**
+
   - Type: Review
   - Assignee: @ARCHITECT (Code Review Lead)
   - Priority: CRITICAL
@@ -295,10 +306,12 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 **Epic:** Implement distributed KV-cache sharding and compression for memory efficiency
 
 **Dependencies:**
+
 - BLOCKED BY: [1.1.4] (Tensor parallelism must be complete)
 - BLOCKED BY: [1.1.5] (Orchestrator must be ready)
 
 **Critical Path Items:**
+
 - KV-cache compression must be finalized before Sprint 1.3 load balancing
 - Distributed sharding strategy blocks cache coherency optimization
 
@@ -307,6 +320,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Planning & Design
 
 - **[1.2.1] Design distributed KV-cache architecture**
+
   - Type: Design Task
   - Assignee: @VELOCITY
   - Priority: CRITICAL
@@ -321,6 +335,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.1.5]
 
 - **[1.2.2] Design cache compression strategy (fp8)**
+
   - Type: Design Task
   - Assignee: @VELOCITY
   - Priority: CRITICAL
@@ -351,6 +366,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Implementation
 
 - **[1.2.4] Implement distributed KV-cache sharding**
+
   - Type: Feature Implementation
   - Assignee: @VELOCITY
   - Priority: CRITICAL
@@ -365,6 +381,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.2.1], [1.1.4]
 
 - **[1.2.5] Implement fp8 compression layer**
+
   - Type: Feature Implementation
   - Assignee: @VELOCITY
   - Priority: CRITICAL
@@ -379,6 +396,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.2.2], [1.2.4]
 
 - **[1.2.6] Implement dynamic allocation strategy**
+
   - Type: Feature Implementation
   - Assignee: @VELOCITY
   - Priority: HIGH
@@ -409,6 +427,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Testing & Validation
 
 - **[1.2.8] Unit tests - distributed KV-cache**
+
   - Type: Test Implementation
   - Assignee: @ECLIPSE
   - Priority: CRITICAL
@@ -423,6 +442,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.2.4]
 
 - **[1.2.9] Unit tests - compression**
+
   - Type: Test Implementation
   - Assignee: @ECLIPSE
   - Priority: CRITICAL
@@ -437,6 +457,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.2.5]
 
 - **[1.2.10] Benchmark - cache performance**
+
   - Type: Validation
   - Assignee: @VELOCITY
   - Priority: CRITICAL
@@ -483,6 +504,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Review & Integration
 
 - **[1.2.13] Code review - KV-cache distributed**
+
   - Type: Review
   - Assignee: @ARCHITECT
   - Priority: CRITICAL
@@ -517,10 +539,12 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 **Epic:** Implement load balancing and adaptive routing for distributed inference
 
 **Dependencies:**
+
 - BLOCKED BY: [1.1.14] (Integration of distributed inference)
 - BLOCKED BY: [1.2.14] (Integration of KV-cache)
 
 **Critical Path Items:**
+
 - Load balancer must support request batching
 - Health checks must inform routing decisions
 - Adaptive routing depends on health monitoring
@@ -530,6 +554,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Planning & Design
 
 - **[1.3.1] Design load balancing strategy**
+
   - Type: Design Task
   - Assignee: @SYNAPSE
   - Priority: CRITICAL
@@ -544,6 +569,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.2.14]
 
 - **[1.3.2] Design request batching strategy**
+
   - Type: Design Task
   - Assignee: @SYNAPSE
   - Priority: CRITICAL
@@ -574,6 +600,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Implementation
 
 - **[1.3.4] Implement round-robin load balancer**
+
   - Type: Feature Implementation
   - Assignee: @SYNAPSE
   - Priority: CRITICAL
@@ -588,6 +615,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.3.1]
 
 - **[1.3.5] Implement health check & failover**
+
   - Type: Feature Implementation
   - Assignee: @SYNAPSE
   - Priority: CRITICAL
@@ -603,6 +631,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.3.4]
 
 - **[1.3.6] Implement request batching engine**
+
   - Type: Feature Implementation
   - Assignee: @SYNAPSE
   - Priority: CRITICAL
@@ -633,6 +662,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Testing & Validation
 
 - **[1.3.8] Unit tests - load balancer**
+
   - Type: Test Implementation
   - Assignee: @ECLIPSE
   - Priority: CRITICAL
@@ -647,6 +677,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.3.4]
 
 - **[1.3.9] Unit tests - health monitoring**
+
   - Type: Test Implementation
   - Assignee: @ECLIPSE
   - Priority: CRITICAL
@@ -661,6 +692,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.3.5]
 
 - **[1.3.10] Load test - request batching**
+
   - Type: Load Test
   - Assignee: @ECLIPSE, @VELOCITY
   - Priority: CRITICAL
@@ -675,6 +707,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: [1.3.6]
 
 - **[1.3.11] Chaos test - failover scenarios**
+
   - Type: Chaos Engineering
   - Assignee: @ECLIPSE, @FORTRESS
   - Priority: CRITICAL
@@ -706,6 +739,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Documentation
 
 - **[1.3.13] Write load balancing documentation**
+
   - Type: Documentation
   - Assignee: @SCRIBE
   - Priority: HIGH
@@ -736,6 +770,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
 ##### Review & Integration
 
 - **[1.3.15] Code review - load balancing & routing**
+
   - Type: Review
   - Assignee: @ARCHITECT
   - Priority: CRITICAL
@@ -750,6 +785,7 @@ SPRINT 1: Foundation & Distributed Architecture (Jan 1-31)
   - Blocked By: All implementation tasks
 
 - **[1.3.16] Integration with serving pipeline**
+
   - Type: Integration
   - Assignee: @SYNAPSE, @APEX
   - Priority: HIGH
@@ -845,63 +881,63 @@ FINISH (Jan 31 - Code Freeze)
 
 #### Sprint 1.1 Dependencies
 
-| Task       | Depends On | Type          | Risk |
-| ---------- | ---------- | ------------- | ---- |
-| [1.1.1]    | None       | Independent   | Low  |
-| [1.1.2]    | [1.1.1]    | Design→Design | Low  |
-| [1.1.3]    | [1.1.1]    | Design→Design | Low  |
-| [1.1.4]    | [1.1.2]    | Design→Code   | Med  |
-| [1.1.5]    | [1.1.3, 1.1.4] | Design→Code   | Med  |
-| [1.1.6]    | [1.1.5]    | Code→Code     | Low  |
-| [1.1.7]    | [1.1.4]    | Code→Test     | Med  |
-| [1.1.8]    | [1.1.5]    | Code→Test     | Med  |
-| [1.1.9]    | [1.1.4, 1.1.5, 1.1.6] | Code→Test | High |
-| [1.1.10]   | [1.1.9]    | Test→Val      | Med  |
-| [1.1.11]   | [1.1.1, 1.1.2, 1.1.3] | Design→Doc | Low  |
-| [1.1.12]   | [1.1.4, 1.1.5, 1.1.6] | Code→Doc   | Low  |
-| [1.1.13]   | [1.1.4, 1.1.5, 1.1.6] | Code→Rev   | Low  |
-| [1.1.14]   | [1.1.13]   | Rev→Int       | Med  |
+| Task     | Depends On            | Type          | Risk |
+| -------- | --------------------- | ------------- | ---- |
+| [1.1.1]  | None                  | Independent   | Low  |
+| [1.1.2]  | [1.1.1]               | Design→Design | Low  |
+| [1.1.3]  | [1.1.1]               | Design→Design | Low  |
+| [1.1.4]  | [1.1.2]               | Design→Code   | Med  |
+| [1.1.5]  | [1.1.3, 1.1.4]        | Design→Code   | Med  |
+| [1.1.6]  | [1.1.5]               | Code→Code     | Low  |
+| [1.1.7]  | [1.1.4]               | Code→Test     | Med  |
+| [1.1.8]  | [1.1.5]               | Code→Test     | Med  |
+| [1.1.9]  | [1.1.4, 1.1.5, 1.1.6] | Code→Test     | High |
+| [1.1.10] | [1.1.9]               | Test→Val      | Med  |
+| [1.1.11] | [1.1.1, 1.1.2, 1.1.3] | Design→Doc    | Low  |
+| [1.1.12] | [1.1.4, 1.1.5, 1.1.6] | Code→Doc      | Low  |
+| [1.1.13] | [1.1.4, 1.1.5, 1.1.6] | Code→Rev      | Low  |
+| [1.1.14] | [1.1.13]              | Rev→Int       | Med  |
 
 #### Sprint 1.2 Dependencies
 
-| Task    | Depends On | Type       | Risk  |
-| ------- | ---------- | ---------- | ----- |
-| [1.2.1] | [1.1.5]    | 1.1→1.2    | High  |
-| [1.2.2] | [1.2.1]    | Design→Des | Med   |
-| [1.2.3] | [1.2.1]    | Design→Des | Med   |
-| [1.2.4] | [1.2.1, 1.1.4] | Des→Code   | High  |
-| [1.2.5] | [1.2.2, 1.2.4] | Des→Code   | High  |
-| [1.2.6] | [1.2.3, 1.2.4] | Des→Code   | Med   |
-| [1.2.7] | [1.2.4]    | Code→Code  | Med   |
-| [1.2.8] | [1.2.4]    | Code→Test  | Med   |
-| [1.2.9] | [1.2.5]    | Code→Test  | Med   |
-| [1.2.10] | [1.2.4, 1.2.5, 1.2.6, 1.2.7] | Code→Val | High |
+| Task     | Depends On                    | Type          | Risk |
+| -------- | ----------------------------- | ------------- | ---- |
+| [1.2.1]  | [1.1.5]                       | 1.1→1.2       | High |
+| [1.2.2]  | [1.2.1]                       | Design→Des    | Med  |
+| [1.2.3]  | [1.2.1]                       | Design→Des    | Med  |
+| [1.2.4]  | [1.2.1, 1.1.4]                | Des→Code      | High |
+| [1.2.5]  | [1.2.2, 1.2.4]                | Des→Code      | High |
+| [1.2.6]  | [1.2.3, 1.2.4]                | Des→Code      | Med  |
+| [1.2.7]  | [1.2.4]                       | Code→Code     | Med  |
+| [1.2.8]  | [1.2.4]                       | Code→Test     | Med  |
+| [1.2.9]  | [1.2.5]                       | Code→Test     | Med  |
+| [1.2.10] | [1.2.4, 1.2.5, 1.2.6, 1.2.7]  | Code→Val      | High |
 | [1.2.11] | [1.2.4, 1.2.5, 1.2.6, 1.1.14] | Code+Int→Test | High |
-| [1.2.12] | [1.2.1, 1.2.2, 1.2.4, 1.2.5] | Des+Code→Doc | Med |
-| [1.2.13] | [1.2.4, 1.2.5, 1.2.6, 1.2.7] | Code→Rev | Low |
-| [1.2.14] | [1.2.13] | Rev→Int    | Med   |
+| [1.2.12] | [1.2.1, 1.2.2, 1.2.4, 1.2.5]  | Des+Code→Doc  | Med  |
+| [1.2.13] | [1.2.4, 1.2.5, 1.2.6, 1.2.7]  | Code→Rev      | Low  |
+| [1.2.14] | [1.2.13]                      | Rev→Int       | Med  |
 
 #### Sprint 1.3 Dependencies
 
-| Task    | Depends On | Type       | Risk  |
-| ------- | ---------- | ---------- | ----- |
-| [1.3.1] | [1.2.14]   | 1.2→1.3    | High  |
-| [1.3.2] | [1.3.1]    | Design→Des | Med   |
-| [1.3.3] | [1.3.1]    | Design→Des | Med   |
-| [1.3.4] | [1.3.1]    | Des→Code   | Med   |
-| [1.3.5] | [1.3.4]    | Code→Code  | Med   |
-| [1.3.6] | [1.3.2, 1.3.4] | Des→Code   | Med   |
-| [1.3.7] | [1.3.3, 1.3.5] | Des→Code   | Med   |
-| [1.3.8] | [1.3.4]    | Code→Test  | Low   |
-| [1.3.9] | [1.3.5]    | Code→Test  | Low   |
-| [1.3.10] | [1.3.6]    | Code→Load  | High  |
-| [1.3.11] | [1.3.5, 1.3.7] | Code→Chaos | High  |
-| [1.3.12] | [1.3.4, 1.3.5, 1.3.6, 1.3.7, 1.1.14, 1.2.14] | All→E2E | Critical |
-| [1.3.13] | [1.3.1, 1.3.2, 1.3.4, 1.3.5] | Des+Code→Doc | Low |
-| [1.3.14] | [1.3.7]    | Code→Doc   | Low   |
-| [1.3.15] | [1.3.4, 1.3.5, 1.3.6, 1.3.7] | Code→Rev | Low |
-| [1.3.16] | [1.3.15]   | Rev→Int    | Med   |
-| [1.3.17] | [1.3.16, 1.2.14] | Int→Verify | Med   |
+| Task     | Depends On                                   | Type         | Risk     |
+| -------- | -------------------------------------------- | ------------ | -------- |
+| [1.3.1]  | [1.2.14]                                     | 1.2→1.3      | High     |
+| [1.3.2]  | [1.3.1]                                      | Design→Des   | Med      |
+| [1.3.3]  | [1.3.1]                                      | Design→Des   | Med      |
+| [1.3.4]  | [1.3.1]                                      | Des→Code     | Med      |
+| [1.3.5]  | [1.3.4]                                      | Code→Code    | Med      |
+| [1.3.6]  | [1.3.2, 1.3.4]                               | Des→Code     | Med      |
+| [1.3.7]  | [1.3.3, 1.3.5]                               | Des→Code     | Med      |
+| [1.3.8]  | [1.3.4]                                      | Code→Test    | Low      |
+| [1.3.9]  | [1.3.5]                                      | Code→Test    | Low      |
+| [1.3.10] | [1.3.6]                                      | Code→Load    | High     |
+| [1.3.11] | [1.3.5, 1.3.7]                               | Code→Chaos   | High     |
+| [1.3.12] | [1.3.4, 1.3.5, 1.3.6, 1.3.7, 1.1.14, 1.2.14] | All→E2E      | Critical |
+| [1.3.13] | [1.3.1, 1.3.2, 1.3.4, 1.3.5]                 | Des+Code→Doc | Low      |
+| [1.3.14] | [1.3.7]                                      | Code→Doc     | Low      |
+| [1.3.15] | [1.3.4, 1.3.5, 1.3.6, 1.3.7]                 | Code→Rev     | Low      |
+| [1.3.16] | [1.3.15]                                     | Rev→Int      | Med      |
+| [1.3.17] | [1.3.16, 1.2.14]                             | Int→Verify   | Med      |
 
 ### Blocking & Parallelization Opportunities
 
@@ -939,18 +975,21 @@ Critical blockers:
 ### Core Team (6 FTE)
 
 1. **@APEX** (Backend Lead) - 1.0 FTE
+
    - Lead: Sprint 1.1, 1.2 performance work, 1.3 integration
    - Assignments: [1.1.1], [1.1.2], [1.1.3], [1.1.4], [1.1.5], [1.2.1], [1.3.16]
    - Code review lead for distributed systems
    - Mentoring: @VELOCITY, @SYNAPSE
 
 2. **@VELOCITY** (Performance Engineer) - 1.0 FTE
+
    - Lead: Sprint 1.2 KV-cache optimization
    - Assignments: [1.1.6], [1.2.1], [1.2.2], [1.2.3], [1.2.4], [1.2.5], [1.2.6], [1.2.7]
    - Performance validation & benchmarking
    - Mentoring: @ECLIPSE on perf testing
 
 3. **@ECLIPSE** (QA/Test Lead) - 1.0 FTE
+
    - Lead: All testing & validation
    - Assignments: [1.1.7], [1.1.8], [1.1.9], [1.2.8], [1.2.9], [1.3.8], [1.3.9], [1.3.10], [1.3.11], [1.3.12]
    - 90%+ coverage enforcement
@@ -958,12 +997,14 @@ Critical blockers:
    - Mentoring: @FORTRESS on chaos scenarios
 
 4. **@SYNAPSE** (Integration Engineer) - 1.0 FTE
+
    - Lead: Sprint 1.3 load balancing
    - Assignments: [1.3.1], [1.3.2], [1.3.3], [1.3.4], [1.3.5], [1.3.6], [1.3.7]
    - API design & system integration
    - Request routing & load balancing
 
 5. **@ARCHITECT** (Systems Architect) - 0.5 FTE
+
    - Lead: Code review & design validation
    - Assignments: [1.1.3], [1.1.13], [1.2.13], [1.3.15], [1.3.17]
    - Architectural decisions & guidance
@@ -977,10 +1018,12 @@ Critical blockers:
 ### Supporting Team (0.9 FTE)
 
 - **@FORTRESS** (Security Review) - 0.3 FTE
+
   - Security review for [1.3.11]
   - Failover security considerations
 
 - **@MENTOR** (Code Review Support) - 0.3 FTE
+
   - Secondary code review for complex PRs
   - Developer education
 
@@ -1046,12 +1089,12 @@ Critical blockers:
 
 **Focus:** Design & Architecture
 
-| Day | Task | Owner | Duration |
-| --- | ---- | ----- | -------- |
-| 1-2 | [1.1.1] Design distributed architecture | @APEX | 3d |
-| 3-4 | [1.1.2] Design tensor parallelism | @APEX | 2d |
-| 3-4 | [1.1.3] Design multi-GPU orchestrator | @APEX/@ARCHITECT | 2d |
-| 5-7 | [1.1.4] Implement tensor parallelism | @APEX | 4d (starts late, continues) |
+| Day | Task                                    | Owner            | Duration                    |
+| --- | --------------------------------------- | ---------------- | --------------------------- |
+| 1-2 | [1.1.1] Design distributed architecture | @APEX            | 3d                          |
+| 3-4 | [1.1.2] Design tensor parallelism       | @APEX            | 2d                          |
+| 3-4 | [1.1.3] Design multi-GPU orchestrator   | @APEX/@ARCHITECT | 2d                          |
+| 5-7 | [1.1.4] Implement tensor parallelism    | @APEX            | 4d (starts late, continues) |
 
 **Deliverable:** Architecture documents approved, implementation begins
 
@@ -1059,14 +1102,14 @@ Critical blockers:
 
 **Focus:** Sprint 1.1 Implementation
 
-| Day | Task | Owner | Duration |
-| --- | ---- | ----- | -------- |
-| 1-4 | [1.1.4] Implement tensor parallelism (cont) | @APEX | +4d |
-| 1-4 | [1.1.5] Implement multi-GPU orchestrator | @APEX | 4d |
-| 1-3 | [1.1.6] Distributed model loading | @VELOCITY | 3d |
-| 3-5 | [1.1.7] Unit tests - tensor parallel | @ECLIPSE | 3d |
-| 3-5 | [1.1.8] Unit tests - orchestrator | @ECLIPSE | 3d |
-| 1-7 | [1.1.11] Architecture documentation | @SCRIBE/@APEX | 2d |
+| Day | Task                                        | Owner         | Duration |
+| --- | ------------------------------------------- | ------------- | -------- |
+| 1-4 | [1.1.4] Implement tensor parallelism (cont) | @APEX         | +4d      |
+| 1-4 | [1.1.5] Implement multi-GPU orchestrator    | @APEX         | 4d       |
+| 1-3 | [1.1.6] Distributed model loading           | @VELOCITY     | 3d       |
+| 3-5 | [1.1.7] Unit tests - tensor parallel        | @ECLIPSE      | 3d       |
+| 3-5 | [1.1.8] Unit tests - orchestrator           | @ECLIPSE      | 3d       |
+| 1-7 | [1.1.11] Architecture documentation         | @SCRIBE/@APEX | 2d       |
 
 **Deliverable:** Core distributed infrastructure implemented & tested
 
@@ -1074,16 +1117,16 @@ Critical blockers:
 
 **Focus:** Sprint 1.1 Integration & Sprint 1.2 Design
 
-| Day | Task | Owner | Duration |
-| --- | ---- | ----- | -------- |
-| 1-3 | [1.1.9] E2E integration test | @ECLIPSE | 3d |
-| 1-3 | [1.1.10] Performance validation | @VELOCITY | 2d |
-| 1-2 | [1.1.13] Code review | @ARCHITECT | 2d |
-| 3-5 | [1.1.14] Integration with inference | @APEX/@SYNAPSE | 2d |
-| 4-5 | [1.1.12] API documentation | @SCRIBE | 1d |
-| 5-7 | [1.2.1] Design distributed KV-cache | @VELOCITY | 3d |
-| 5-7 | [1.2.2] Design cache compression | @VELOCITY | 2d |
-| 5-7 | [1.2.3] Design dynamic allocation | @VELOCITY | 2d |
+| Day | Task                                | Owner          | Duration |
+| --- | ----------------------------------- | -------------- | -------- |
+| 1-3 | [1.1.9] E2E integration test        | @ECLIPSE       | 3d       |
+| 1-3 | [1.1.10] Performance validation     | @VELOCITY      | 2d       |
+| 1-2 | [1.1.13] Code review                | @ARCHITECT     | 2d       |
+| 3-5 | [1.1.14] Integration with inference | @APEX/@SYNAPSE | 2d       |
+| 4-5 | [1.1.12] API documentation          | @SCRIBE        | 1d       |
+| 5-7 | [1.2.1] Design distributed KV-cache | @VELOCITY      | 3d       |
+| 5-7 | [1.2.2] Design cache compression    | @VELOCITY      | 2d       |
+| 5-7 | [1.2.3] Design dynamic allocation   | @VELOCITY      | 2d       |
 
 **Deliverable:** Sprint 1.1 complete & integrated, Sprint 1.2 designs approved
 
@@ -1091,15 +1134,15 @@ Critical blockers:
 
 **Focus:** Sprint 1.2 & 1.3 Implementation & Integration
 
-| Day | Task | Owner | Duration |
-| --- | ---- | ----- | -------- |
-| 1-4 | [1.2.4] Distributed KV-cache sharding | @VELOCITY | 4d |
-| 2-4 | [1.2.5] fp8 compression | @VELOCITY | 3d |
-| 3-5 | [1.2.6] Dynamic allocation | @VELOCITY | 3d |
-| 4-5 | [1.2.7] Cache coherency | @VELOCITY | 2d |
-| 1-3 | [1.3.1] Design load balancing | @SYNAPSE | 3d |
-| 3-5 | [1.3.2] Design request batching | @SYNAPSE | 2d |
-| 4-5 | [1.3.3] Design adaptive routing | @SYNAPSE | 2d |
+| Day | Task                                    | Owner            | Duration |
+| --- | --------------------------------------- | ---------------- | -------- |
+| 1-4 | [1.2.4] Distributed KV-cache sharding   | @VELOCITY        | 4d       |
+| 2-4 | [1.2.5] fp8 compression                 | @VELOCITY        | 3d       |
+| 3-5 | [1.2.6] Dynamic allocation              | @VELOCITY        | 3d       |
+| 4-5 | [1.2.7] Cache coherency                 | @VELOCITY        | 2d       |
+| 1-3 | [1.3.1] Design load balancing           | @SYNAPSE         | 3d       |
+| 3-5 | [1.3.2] Design request batching         | @SYNAPSE         | 2d       |
+| 4-5 | [1.3.3] Design adaptive routing         | @SYNAPSE         | 2d       |
 | 1-7 | [1.2.8], [1.2.9], [1.2.12] Tests & docs | @ECLIPSE/@SCRIBE | parallel |
 
 **Deliverable:** KV-cache implementation 80% done, Load balancing designed
@@ -1108,13 +1151,13 @@ Critical blockers:
 
 **Focus:** Completion & Final Integration
 
-| Day | Task | Owner | Duration |
-| --- | ---- | ----- | -------- |
-| 1-2 | [1.2.10] Cache performance benchmarks | @VELOCITY | 2d |
-| 1-3 | [1.2.11] KV-cache E2E test | @ECLIPSE | 3d |
-| 1-2 | [1.2.13] Code review | @ARCHITECT | 2d |
-| 2-3 | [1.2.14] Integration with pipeline | @APEX/@SYNAPSE | 2d |
-| 3-7 | Sprint 1 final verification | All | 2d |
+| Day | Task                                  | Owner          | Duration |
+| --- | ------------------------------------- | -------------- | -------- |
+| 1-2 | [1.2.10] Cache performance benchmarks | @VELOCITY      | 2d       |
+| 1-3 | [1.2.11] KV-cache E2E test            | @ECLIPSE       | 3d       |
+| 1-2 | [1.2.13] Code review                  | @ARCHITECT     | 2d       |
+| 2-3 | [1.2.14] Integration with pipeline    | @APEX/@SYNAPSE | 2d       |
+| 3-7 | Sprint 1 final verification           | All            | 2d       |
 
 **Deliverable:** Sprint 1 complete, 95%+ tasks done, Code freeze Jan 31
 
@@ -1199,34 +1242,34 @@ When creating issue:
 
 ### Sprint Metrics
 
-| Metric | Target | Formula |
-| ------ | ------ | ------- |
-| **Velocity** | 85 pts | Sum of completed task points |
-| **Burndown** | Linear | Remaining / Days left |
-| **Completion Rate** | 95% | Completed / Total × 100 |
-| **Code Coverage** | 90%+ | Coverage % for new code |
-| **Review Turnaround** | 24hrs | Avg time to first review |
-| **Test Pass Rate** | 100% | Passing / Total tests |
+| Metric                | Target | Formula                      |
+| --------------------- | ------ | ---------------------------- |
+| **Velocity**          | 85 pts | Sum of completed task points |
+| **Burndown**          | Linear | Remaining / Days left        |
+| **Completion Rate**   | 95%    | Completed / Total × 100      |
+| **Code Coverage**     | 90%+   | Coverage % for new code      |
+| **Review Turnaround** | 24hrs  | Avg time to first review     |
+| **Test Pass Rate**    | 100%   | Passing / Total tests        |
 
 ### Quality Metrics
 
-| Metric | Target | Measurement |
-| ------ | ------ | ------------ |
-| **Performance (P99 Latency)** | <50ms | Production benchmark |
-| **Throughput** | >100 req/sec | Load test result |
-| **Scaling Efficiency** | >85% | 4 GPU speedup / 4 |
-| **Cache Hit Rate** | >95% | Cache benchmark |
-| **Error Rate** | <0.1% | Production monitoring |
-| **Availability** | 99.9% | Uptime percentage |
+| Metric                        | Target       | Measurement           |
+| ----------------------------- | ------------ | --------------------- |
+| **Performance (P99 Latency)** | <50ms        | Production benchmark  |
+| **Throughput**                | >100 req/sec | Load test result      |
+| **Scaling Efficiency**        | >85%         | 4 GPU speedup / 4     |
+| **Cache Hit Rate**            | >95%         | Cache benchmark       |
+| **Error Rate**                | <0.1%        | Production monitoring |
+| **Availability**              | 99.9%        | Uptime percentage     |
 
 ### Team Metrics
 
-| Metric | Target | Measurement |
-| ------ | ------ | ------------ |
-| **Capacity Utilization** | 85% | Assigned hours / available |
-| **On-Time Completion** | 95% | Tasks done by deadline |
-| **Code Review Quality** | High | Bugs found in review |
-| **Knowledge Sharing** | Good | Cross-training sessions |
+| Metric                   | Target | Measurement                |
+| ------------------------ | ------ | -------------------------- |
+| **Capacity Utilization** | 85%    | Assigned hours / available |
+| **On-Time Completion**   | 95%    | Tasks done by deadline     |
+| **Code Review Quality**  | High   | Bugs found in review       |
+| **Knowledge Sharing**    | Good   | Cross-training sessions    |
 
 ---
 
@@ -1234,20 +1277,22 @@ When creating issue:
 
 ### High-Risk Items
 
-| Risk | Probability | Impact | Mitigation |
-| ---- | ----------- | ------ | ---------- |
-| Distributed [1.1.5] slips | Medium | High | Start early, allocate buffer |
-| Tensor parallel scaling <85% | Medium | High | Benchmark frequently |
-| KV-cache compression accuracy | Low | High | Extensive testing |
-| Load balancing under high load | Medium | Med | Chaos testing, circuit breaker |
-| Team capacity constraints | Low | Med | Cross-training, support |
+| Risk                           | Probability | Impact | Mitigation                     |
+| ------------------------------ | ----------- | ------ | ------------------------------ |
+| Distributed [1.1.5] slips      | Medium      | High   | Start early, allocate buffer   |
+| Tensor parallel scaling <85%   | Medium      | High   | Benchmark frequently           |
+| KV-cache compression accuracy  | Low         | High   | Extensive testing              |
+| Load balancing under high load | Medium      | Med    | Chaos testing, circuit breaker |
+| Team capacity constraints      | Low         | Med    | Cross-training, support        |
 
 ### Dependency Risks
 
 - **Critical Path Dependency:** [1.1.5] gates Sprint 1.2 & 1.3
+
   - **Mitigation:** Allocate @APEX full-time, daily sync, early code review
 
 - **Testing Bottleneck:** [1.3.12] integration test depends on 6 tasks
+
   - **Mitigation:** Parallel test development, mock dependencies
 
 - **Integration Risk:** [1.1.14], [1.2.14], [1.3.16] all integration points
@@ -1260,16 +1305,19 @@ When creating issue:
 ### Immediate Actions (Week of Dec 20)
 
 1. **Create GitHub Project board**
+
    - [ ] Set up 4 sprint columns
    - [ ] Add task categories to each sprint
    - [ ] Configure automation rules
 
 2. **Create GitHub Issues**
+
    - [ ] Create all Sprint 1 issues from this document
    - [ ] Add labels, assignments, milestones
    - [ ] Link dependencies
 
 3. **Team Kickoff**
+
    - [ ] Review assignments with team
    - [ ] Clarify expectations & deadlines
    - [ ] Set up communication channels

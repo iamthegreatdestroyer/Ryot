@@ -17,16 +17,19 @@
 Sprint 1.2 targets 40-50% KV-cache memory reduction via fp8 compression, but the strategy is underspecified:
 
 1. **When is compression applied?**
+
    - Immediately after cache write? (latency cost)
    - Lazily when cache fills? (complexity)
    - Only for historical tokens (keep recent in fp32)? (hybrid)
 
 2. **Decompression overhead?**
+
    - Must decompress before attention computation
    - Latency budget: <1ms per decompression
    - Need to validate achievable on A100/H100
 
 3. **Interaction with distributed sharding?**
+
    - Each GPU holds 1/4 of cache (head-wise)
    - Can compress independently (no coordination needed)
    - Validation: Compression doesn't break distributed semantics
@@ -44,11 +47,11 @@ When token writes to KV-cache:
   1. Store in fp32 (warm cache)
   2. Immediately compress to fp8
   3. On attention: decompress fp8 → fp32 → compute
-  
+
 Pros:
   • Simplest implementation (no state tracking)
   • Predictable memory usage
-  
+
 Cons:
   • Compression/decompression on every attention op
   • Estimated latency cost: ~2-3ms per token
@@ -69,11 +72,11 @@ When token writes:
   3. On attention:
      - Recent tokens: use fp32 directly
      - Historical tokens: decompress from fp8
-  
+
 Pros:
   • Minimal latency cost (few recent tokens stay fp32)
   • Compression amortized across many tokens
-  
+
 Cons:
   • Complex state tracking (two zones)
   • Edge case: what if sequence is shorter than hot zone?
@@ -89,7 +92,7 @@ Rationale:
   • Early layers: low-attention importance to historical tokens
   • Late layers: high-importance to full context
   • Compress early layer cache, keep late layer fp32
-  
+
 Memory savings: ~30% (vs 50% if all layers compressed)
 Latency impact: Minimal (late layers stay fp32)
 
@@ -97,7 +100,7 @@ Pros:
   • Simple to implement
   • Minimal latency cost
   • Reasonable memory savings
-  
+
 Cons:
   • Less memory savings than Option A
   • Per-layer decisions add complexity
@@ -106,6 +109,7 @@ Cons:
 ### Recommendation: **Option B (Lazy Compression)** - If Team Can Execute
 
 **Rationale**:
+
 - Meets 40% memory reduction target
 - Minimal latency impact (<1ms)
 - Scales naturally to longer sequences
@@ -115,6 +119,7 @@ Cons:
 ### Fallback: **Option C (Hybrid)** - If Confidence Low
 
 **Rationale**:
+
 - Simpler than Option B
 - Still achieves 30-40% memory savings
 - Minimal latency impact
@@ -159,6 +164,7 @@ Implementation Timeline:
 Load balancer must coordinate with distributed KV-cache, but strategy is vague.
 
 **The Core Tension**:
+
 - **Stateless Ideal**: Route any request to any GPU (pure LB)
 - **Stateful Reality**: KV-cache tied to specific GPU rank (context dependent)
 - **Use Case**: Multi-turn conversations need context preservation
@@ -171,7 +177,7 @@ Load balancer must coordinate with distributed KV-cache, but strategy is vague.
 Algorithm:
   hash_key = user_id or session_id
   preferred_gpu = hash(hash_key) % num_gpus
-  
+
   1. Route request to preferred_gpu
   2. If preferred_gpu overloaded:
      - Queue on preferred_gpu (wait for capacity)
@@ -187,7 +193,7 @@ Pros:
   • Implementation: ~50 LOC (simple hash + routing table)
   • No cache distribution needed
   • Context always available (correctness guaranteed)
-  
+
 Cons:
   • Load imbalance: user-dependent (could be 10-20%)
   • Unfair: heavy users block light users on same GPU
@@ -211,7 +217,7 @@ Next request from same user to GPU 1:
 Pros:
   • Pure load balancing (any GPU can handle any request)
   • No fairness issues (perfect distribution possible)
-  
+
 Cons:
   • Memory overhead: 3× cache size (store on all GPUs)
   • Communication: Broadcast cache after each request
@@ -243,7 +249,7 @@ When GPU 0 processes request:
   1. Fetch cache from Redis
   2. Compute attention
   3. Update cache in Redis
-  
+
 When GPU 3 processes same request:
   1. Fetch updated cache from Redis
   2. Context is preserved (correct)
@@ -251,7 +257,7 @@ When GPU 3 processes same request:
 Pros:
   • Pure load balancing (any GPU → any request)
   • Solves imbalance problem
-  
+
 Cons:
   • New operational component (Redis, reliability risk)
   • Network latency: Redis fetch ~5-10ms per request
@@ -264,20 +270,20 @@ Cons:
 ```
 Algorithm:
   preferred_gpu = hash(user_id) % num_gpus
-  
+
   Route to preferred_gpu if:
     • Queue length < threshold (2 requests)
-  
+
   Else (preferred GPU busy):
     • Route to least-loaded GPU
     • Expect KV-cache miss on cold GPU
     • Cold GPU re-fetches context from state server (Option C hybrid)
-  
+
 Pros:
   • Usually sticky (use cached context)
   • Gracefully degrades when GPU overloaded
   • Reasonable balance
-  
+
 Cons:
   • Complexity: hybrid sticky + state server
   • Edge case: thrashing if all GPUs overloaded
@@ -285,25 +291,27 @@ Cons:
 
 ### Decision Criteria Matrix
 
-| Criterion              | Option A | Option B | Option C | Option D |
-|------------------------|----------|----------|----------|----------|
-| Implementation LOC     | 50       | 500      | 300      | 400      |
-| Memory overhead        | 1×       | 4×       | Minimal  | 1.5×     |
-| Load imbalance         | 10-20%   | 0-5%     | 0-5%     | 5-10%    |
-| Latency penalty        | 0ms      | +15ms    | +5ms     | +2ms     |
-| Operational complexity | Low      | High     | High     | Medium   |
-| Correctness guarantee  | Strong   | Strong   | Medium   | Medium   |
-| Recommended for Phase 3| ✅       | ❌       | ⚠️       | ⚠️       |
+| Criterion               | Option A | Option B | Option C | Option D |
+| ----------------------- | -------- | -------- | -------- | -------- |
+| Implementation LOC      | 50       | 500      | 300      | 400      |
+| Memory overhead         | 1×       | 4×       | Minimal  | 1.5×     |
+| Load imbalance          | 10-20%   | 0-5%     | 0-5%     | 5-10%    |
+| Latency penalty         | 0ms      | +15ms    | +5ms     | +2ms     |
+| Operational complexity  | Low      | High     | High     | Medium   |
+| Correctness guarantee   | Strong   | Strong   | Medium   | Medium   |
+| Recommended for Phase 3 | ✅       | ❌       | ⚠️       | ⚠️       |
 
 ### Recommendation: **Option A (Sticky Sessions)**
 
 **Rationale for Phase 3**:
+
 1. Multi-turn conversation is primary use case (not random requests)
 2. Load imbalance acceptable (users have natural distribution)
 3. Simplicity critical for team velocity
 4. Can upgrade to Option C (state server) in Phase 3.2 if needed
 
 **Acceptance Criteria**:
+
 - Load imbalance <10% across GPUs (monitor and validate)
 - Context preserved across multi-turn conversations
 - Session routing deterministic (same user_id → same GPU)
@@ -360,16 +368,19 @@ Distributed inference introduces debugging challenges not present in single-GPU 
 ### Key Decisions Needed
 
 1. **Log Aggregation**:
+
    - Centralized: All ranks → single file
    - Distributed: Each rank has local log
    - Hybrid: Local buffer → periodic flush to central location
 
 2. **Rank Identification**:
+
    - How do logs include rank information?
    - How do we query logs by rank?
    - How do we correlate ranks across request?
 
 3. **Tracing & Causality**:
+
    - Can we trace request → GPU 0 → GPU 1 → GPU 2?
    - How do we detect communication bottlenecks?
    - How do we measure per-rank latencies?
@@ -449,12 +460,12 @@ Chaos Engineering Tests:
 
 ## Summary: ADR Completion Timeline
 
-| ADR      | Title                                 | Due Date    | Owner      | Impact     |
-|----------|---------------------------------------|-------------|------------|-----------|
-| ADR-002  | KV-Cache Compression Strategy        | Dec 27      | @APEX      | Blocks S1.2|
-| ADR-003  | Load Balancing & Request Routing     | Dec 27      | @ARCHITECT | Blocks S1.3|
-| ADR-004  | Distributed Debugging & Observability| Jan 10      | @SENTRY    | Critical  |
-| ADR-005  | Failure Modes & Recovery             | Jan 20      | @FORTRESS  | SLA-related|
+| ADR     | Title                                 | Due Date | Owner      | Impact      |
+| ------- | ------------------------------------- | -------- | ---------- | ----------- |
+| ADR-002 | KV-Cache Compression Strategy         | Dec 27   | @APEX      | Blocks S1.2 |
+| ADR-003 | Load Balancing & Request Routing      | Dec 27   | @ARCHITECT | Blocks S1.3 |
+| ADR-004 | Distributed Debugging & Observability | Jan 10   | @SENTRY    | Critical    |
+| ADR-005 | Failure Modes & Recovery              | Jan 20   | @FORTRESS  | SLA-related |
 
 ---
 

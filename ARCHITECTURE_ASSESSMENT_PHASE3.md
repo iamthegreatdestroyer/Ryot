@@ -42,6 +42,7 @@ Observability (Metrics/Tracing)       ← Cross-cutting
 ```
 
 **Why This Works**:
+
 - Clear separation of concerns
 - Each layer has single responsibility
 - Dependencies flow in one direction (top → bottom)
@@ -51,13 +52,13 @@ Observability (Metrics/Tracing)       ← Cross-cutting
 
 The **row-wise tensor parallelism** approach is optimal for inference:
 
-| Criterion                  | Row-Wise TP | Pipeline | 3D Hybrid | Decision |
-|--------------------------|-------------|----------|----------|----------|
+| Criterion                 | Row-Wise TP | Pipeline      | 3D Hybrid          | Decision    |
+| ------------------------- | ----------- | ------------- | ------------------ | ----------- |
 | Implementation complexity | ⭐⭐ Low    | ⭐⭐⭐⭐ High | ⭐⭐⭐⭐⭐ Extreme | ✅ ROW-WISE |
-| Communication overhead    | 5-8ms       | 15-20ms  | 10-15ms  | ✅ LOWEST |
-| Memory per GPU            | 7GB         | 14GB     | 4GB      | ⭐ BEST    |
-| Speedup efficiency @ 4GPU | 3.5-3.8x    | 2.8-3.2x | 3.2-3.5x | ✅ BEST   |
-| Inference latency impact  | Minimal     | Pipelined| Minimal  | ✅ GOOD   |
+| Communication overhead    | 5-8ms       | 15-20ms       | 10-15ms            | ✅ LOWEST   |
+| Memory per GPU            | 7GB         | 14GB          | 4GB                | ⭐ BEST     |
+| Speedup efficiency @ 4GPU | 3.5-3.8x    | 2.8-3.2x      | 3.2-3.5x           | ✅ BEST     |
+| Inference latency impact  | Minimal     | Pipelined     | Minimal            | ✅ GOOD     |
 
 **Architecture Decision**: Row-wise tensor parallelism is the correct choice for Phase 3 inference workloads. ✅
 
@@ -80,12 +81,14 @@ Design Benefit:
 Sprint 1.3 specifies "round-robin load balancer" but lacks critical details:
 
 **Missing Specifications**:
+
 1. **Batching strategy**: Static vs. dynamic batching?
 2. **Request queueing**: FIFO, priority queue, or custom?
 3. **GPU affinity**: Sticky sessions or pure stateless?
 4. **Backpressure handling**: Drop requests or queue indefinitely?
 
 **Impact**: Design vagueness could lead to:
+
 - Inconsistent team understanding
 - Implementation divergence
 - Post-implementation redesign
@@ -97,6 +100,7 @@ Sprint 1.3 specifies "round-robin load balancer" but lacks critical details:
 DISTRIBUTED_ARCHITECTURE.md shows the sharding strategy but lacks coherency guarantees:
 
 **Questions Unanswered**:
+
 1. How do we ensure KV-cache consistency across GPUs during inference?
 2. What happens if a GPU fails mid-sequence (inference streaming)?
 3. How does dynamic batching interact with distributed KV-cache?
@@ -112,16 +116,19 @@ DISTRIBUTED_ARCHITECTURE.md shows the sharding strategy but lacks coherency guar
 **Assessment**: ⭐⭐⭐⭐ (4/5 - SOLID)
 
 **Strengths**:
+
 - Clear MVP scope (tensor parallelism + orchestrator)
 - Measurable success criteria (3.8x speedup on 4 GPU)
 - Natural integration with Phase 2
 
 **Gaps**:
+
 1. **Process Group Initialization**: How is NCCL group created? Multi-node future?
 2. **Rank Assignment**: How are ranks mapped to GPUs? Auto-detection or manual?
 3. **Model Loading Distribution**: Step-by-step logic for weight sharding missing
 
 **Missing Specification**:
+
 ```python
 # Currently vague - needs explicit design:
 def distribute_model_weights(model, world_size, rank):
@@ -138,17 +145,21 @@ def distribute_model_weights(model, world_size, rank):
 **Assessment**: ⭐⭐⭐ (3/5 - INCOMPLETE SPEC)
 
 **Strengths**:
+
 - Clear compression target (fp8, 40-50% reduction)
 - Addresses critical memory constraint
 - Realistic timeline (week 2-3)
 
 **Critical Gaps**:
+
 1. **Compression Strategy Undefined**:
+
    - When is compression applied? (immediately or lazy?)
    - Decompression overhead? (can't ignore on inference path)
    - Per-head or per-token quantization?
 
 2. **Dynamic Cache Allocation**:
+
    - How does "dynamic allocation" interact with sharded cache?
    - What triggers reallocation? (request batch size change?)
    - Memory fragmentation risk?
@@ -168,11 +179,13 @@ def distribute_model_weights(model, world_size, rank):
 **Critical Issues**:
 
 1. **Stateless vs. Stateful**:
+
    - Pure load balancing (request router) is stateless
    - But KV-cache is state (belongs to specific GPU rank)
    - How do these interact?
 
 2. **Batching Semantics**:
+
    - "Request batching engine" but no specification
    - Batch by request arrival time? By token count?
    - Max batch size? Padding strategy?
@@ -195,15 +208,15 @@ Sprint sequence makes architectural sense:
 ```
 Sprint 1: Foundation (TP + Cache + Load Balancer)
    └─ Ready: Multi-GPU inference working locally
-       
+
 Sprint 2: Serving APIs (FastAPI + WebSocket + gRPC)
    └─ Builds on: Sprint 1 distributed inference
    └─ Adds: Protocol layers, authentication, streaming
-       
+
 Sprint 3: Observability (Metrics + Tracing + Resilience)
    └─ Builds on: Sprint 1-2 infrastructure
    └─ Adds: Monitoring, failure handling
-       
+
 Sprint 4: Optimization (Batching + Quantization + Scheduling)
    └─ Builds on: Sprint 1-3 foundation
    └─ Adds: Performance tuning, multi-tenant features
@@ -216,6 +229,7 @@ Sprint 4: Optimization (Batching + Quantization + Scheduling)
 **Issue**: Sprint 2 assumes single unified model, but Sprint 1 creates distributed model with replicated/sharded state.
 
 **Example Conflict**:
+
 ```
 Sprint 1 produces:
   • Replicated state: input_ids across all ranks
@@ -242,23 +256,26 @@ Reality:
 #### 🔴 **RISK #1: KV-Cache State Management Under Load (HIGH IMPACT, HIGH PROBABILITY)**
 
 **Problem**:
+
 - KV-cache is GPU-rank-specific state
 - Load balancer routes requests to GPUs
 - Streaming requires maintaining KV-cache affinity across multiple requests
 - No documented strategy for handling multi-turn conversations with distributed cache
 
 **Scenario**:
+
 ```
 User initiates conversation:
   Request 1: "Hello" → Router picks GPU 0
               KV-cache grows on GPU 0 only
-              
+
   Request 2: "How are you?" → Router picks GPU 3 (load balanced)
               GPU 3 has empty KV-cache (not user's context)
               INFERENCE FAILS: Missing previous context
 ```
 
 **Mitigation Strategy**:
+
 1. **Sticky Session**: Maintain request affinity to same GPU rank
 2. **Distributed Context**: Store KV-cache on all GPUs (expensive)
 3. **Lightweight State Server**: Centralized KV-cache management (bottleneck)
@@ -274,6 +291,7 @@ User initiates conversation:
 **Issue**: Plan assumes <10% communication overhead but doesn't validate assumptions.
 
 **Reality Check**:
+
 ```
 Llama2-7B inference on 4 GPUs:
 
@@ -289,6 +307,7 @@ vs. plan assumption of <10%
 ```
 
 **Cascading Impact**:
+
 - Speedup target (3.8x) needs recalibration
 - May only achieve 3.0-3.2x speedup
 - Violates "95% scaling efficiency" promise
@@ -296,6 +315,7 @@ vs. plan assumption of <10%
 **Root Cause**: Plan doesn't measure actual latencies on target hardware (A100/H100).
 
 **Mitigation**:
+
 1. Week 1 Sprint 1.1: Run communication benchmarks (NCCL all-reduce, all-gather)
 2. Validate on actual target hardware (not simulation)
 3. Adjust efficiency targets if needed
@@ -312,12 +332,14 @@ vs. plan assumption of <10%
 **Hidden Complexity**:
 
 1. **Debugging Distributed Inference**:
+
    - Single GPU: Print values, step through debugger ✓
    - Distributed: Rank-specific behavior, timing-dependent bugs
    - How are rank-specific logs aggregated?
    - How do we debug communication hangs?
 
 2. **Performance Analysis**:
+
    - Single GPU: Use `torch.profiler` ✓
    - Distributed: NCCL profiling, rank-wise timings, communication bottlenecks
    - Current plan has no profiling strategy
@@ -328,6 +350,7 @@ vs. plan assumption of <10%
    - Not reflected in Sprint 3 scope
 
 **Allocation**:
+
 - Plan allocates ~3 weeks for monitoring/logging (Sprint 3.1-3.2)
 - Realistic need: 4-5 weeks for production-grade instrumentation
 
@@ -337,14 +360,14 @@ vs. plan assumption of <10%
 
 ### Design Gaps Summary
 
-| Gap                              | Severity | Sprint Impact | Mitigation Effort |
-|----------------------------------|----------|---------------|-------------------|
-| Load balancer + KV-cache coupling | HIGH     | Sprint 1.3    | 3 days design    |
-| KV-cache compression undefined    | HIGH     | Sprint 1.2    | 2 days design    |
-| Communication overhead validation | MEDIUM   | Sprint 1.1    | 3 days benchmark |
-| Debugging distributed system      | MEDIUM   | Sprint 3      | 1 week design    |
-| Failover & recovery strategy      | MEDIUM   | Sprint 1.1    | 2 days design    |
-| Weight distribution algorithm     | LOW      | Sprint 1.1    | 1 day pseudo-code|
+| Gap                               | Severity | Sprint Impact | Mitigation Effort |
+| --------------------------------- | -------- | ------------- | ----------------- |
+| Load balancer + KV-cache coupling | HIGH     | Sprint 1.3    | 3 days design     |
+| KV-cache compression undefined    | HIGH     | Sprint 1.2    | 2 days design     |
+| Communication overhead validation | MEDIUM   | Sprint 1.1    | 3 days benchmark  |
+| Debugging distributed system      | MEDIUM   | Sprint 3      | 1 week design     |
+| Failover & recovery strategy      | MEDIUM   | Sprint 1.1    | 2 days design     |
+| Weight distribution algorithm     | LOW      | Sprint 1.1    | 1 day pseudo-code |
 
 ---
 
@@ -356,6 +379,7 @@ vs. plan assumption of <10%
 **Priority**: P0 - Blocks Sprint 1.2 implementation
 
 **Decision Required**:
+
 1. Exact compression strategy (when, how, precision)
 2. Decompression performance requirements
 3. Interaction with distributed sharding
@@ -364,6 +388,7 @@ vs. plan assumption of <10%
 **Stakeholders**: @APEX (implementation), @VELOCITY (optimization), @TENSOR (quantization)
 
 **Definition of Done**:
+
 - [ ] Compression algorithm pseudocode
 - [ ] Decompression latency budget allocated
 - [ ] Trade-off analysis (accuracy vs. memory)
@@ -377,6 +402,7 @@ vs. plan assumption of <10%
 **Priority**: P0 - Blocks Sprint 1.3 implementation
 
 **Decision Required**:
+
 1. Sticky sessions vs. distributed context vs. state server?
 2. Request affinity mechanism (hash-based, session ID, LRU?)
 3. How load balancer coordinates with distributed inference ranks
@@ -385,6 +411,7 @@ vs. plan assumption of <10%
 **Stakeholders**: @ARCHITECT, @APEX, @FLUX (infrastructure)
 
 **Definition of Done**:
+
 - [ ] Architecture diagram: request path through load balancer + ranks
 - [ ] Request routing algorithm (pseudocode)
 - [ ] Session affinity specification
@@ -398,6 +425,7 @@ vs. plan assumption of <10%
 **Priority**: P1 - Critical for team velocity
 
 **Decision Required**:
+
 1. Log aggregation strategy (centralized, distributed, hybrid?)
 2. Rank-to-request tracing mechanism
 3. Communication bottleneck detection
@@ -406,6 +434,7 @@ vs. plan assumption of <10%
 **Stakeholders**: @ARCHITECT, @SENTRY (monitoring), @APEX
 
 **Definition of Done**:
+
 - [ ] Logging/tracing architecture diagram
 - [ ] Example debug workflow (trace a request across 4 ranks)
 - [ ] Profiling tools selection + configuration
@@ -419,6 +448,7 @@ vs. plan assumption of <10%
 **Priority**: P1 - Affects reliability targets
 
 **Decision Required**:
+
 1. Failure mode identification (GPU OOM, rank hang, NVLink failure, etc.)
 2. Detection mechanism for each mode
 3. Recovery strategy (checkpoint/restart, degraded mode, etc.)
@@ -427,6 +457,7 @@ vs. plan assumption of <10%
 **Stakeholders**: @ARCHITECT, @FORTRESS (resilience), @APEX
 
 **Definition of Done**:
+
 - [ ] Failure mode taxonomy
 - [ ] Detection + recovery matrix
 - [ ] Checkpoint/recovery procedure
@@ -439,12 +470,14 @@ vs. plan assumption of <10%
 ### 4.1 Documentation Assessment
 
 #### What's Well-Documented ✅
+
 - [x] High-level sprint structure and timeline
 - [x] Tensor parallelism theory (DISTRIBUTED_ARCHITECTURE.md sections 1-2)
 - [x] Communication patterns (DISTRIBUTED_ARCHITECTURE.md section 3)
 - [x] Success criteria (quantified in sprint specs)
 
 #### What's Under-Documented ⚠️
+
 - [ ] Integration between components (TP + Load Balancer + Serving)
 - [ ] Request routing algorithm (missing pseudocode)
 - [ ] Weight distribution algorithm (missing implementation detail)
@@ -453,6 +486,7 @@ vs. plan assumption of <10%
 - [ ] Debugging workflows (no runbook provided)
 
 #### Critical Documentation Gaps
+
 1. **Component Integration Diagram**: How does load balancer interact with distributed TP?
 2. **Data Flow Diagram**: Request → Router → Rank → Cache → Output
 3. **State Machine Diagrams**: Request lifecycle through distributed system
@@ -463,6 +497,7 @@ vs. plan assumption of <10%
 #### @APEX (Implementation Lead) Readiness
 
 **Can Start Immediately**: Sprint 1.1 core tasks
+
 ```
 ✅ Tensor parallelism implementation (clear spec in DISTRIBUTED_ARCHITECTURE.md)
 ✅ GPU orchestrator (rank management is standard PyTorch distributed)
@@ -470,6 +505,7 @@ vs. plan assumption of <10%
 ```
 
 **Needs Clarification**: Sprint 1.2-1.3 integration
+
 ```
 ⚠️ How TP layers interact with load balancer (Sprint 1.3)
 ⚠️ KV-cache distribution details (Sprint 1.2)
@@ -483,6 +519,7 @@ vs. plan assumption of <10%
 #### @FLUX (Infrastructure/DevOps) Readiness
 
 **Needed Before Sprint 2**:
+
 - [ ] Multi-GPU orchestration infrastructure (Kubernetes, Docker Compose)
 - [ ] Distributed testing environment setup
 - [ ] CI/CD pipeline for distributed tests
@@ -503,6 +540,7 @@ vs. plan assumption of <10%
 **Current Plan Assumes**: KV-cache compression is straightforward (it's not).
 
 **Recommendation**: Involve @VELOCITY early (Sprint 1.2 planning) for:
+
 - Communication overhead analysis
 - Compression latency budgeting
 - Scaling efficiency validation
@@ -538,6 +576,7 @@ vs. plan assumption of <10%
 **What**: Shard model weights along output dimension for each layer.
 
 **Why This Team**:
+
 - Implementation complexity: ⭐⭐ (vs ⭐⭐⭐⭐ pipeline parallel)
 - Communication overhead: Minimal (all-reduce is optimized)
 - Speedup efficiency: Best at 4-8 GPUs
@@ -545,6 +584,7 @@ vs. plan assumption of <10%
 **Trade-Off Accepted**: Slightly higher memory per GPU (vs. 3D mesh) for simplicity.
 
 **Communication Team**:
+
 > "We're using row-wise tensor parallelism because it has the lowest communication overhead (5-8ms for 4 GPUs) and is much simpler to implement than pipeline or 3D parallelism. This is optimal for inference where compute-to-communication ratio is naturally favorable."
 
 ---
@@ -554,11 +594,13 @@ vs. plan assumption of <10%
 **What**: Each GPU stores specific attention heads' KV-cache (natural fit with row-wise TP).
 
 **Why This Team**:
+
 - Zero communication overhead (heads are independent)
 - Memory scales linearly: 4× GPUs = 4× KV-cache capacity
 - Perfect for inference (no cross-GPU head communication)
 
 **Communication Team**:
+
 > "We're sharding KV-cache by attention heads because it requires zero communication - each GPU computes its assigned heads independently. This enables 4x longer sequences on the same 4-GPU hardware."
 
 ---
@@ -568,6 +610,7 @@ vs. plan assumption of <10%
 **What**: Route requests from same user session to same GPU rank (maintains KV-cache affinity).
 
 **Why This Team**:
+
 - KV-cache is request-specific state
 - Distributed cache is too expensive (2-3x memory overhead)
 - Sticky sessions preserve context without overhead
@@ -575,6 +618,7 @@ vs. plan assumption of <10%
 **Trade-Off Accepted**: Slightly less optimal load balancing for simplicity.
 
 **Communication Team** (PENDING ADR-003):
+
 > "We're using sticky sessions - once a user's conversation starts on GPU 0, all their requests route to GPU 0. This preserves KV-cache context without expensive distributed cache management. Load imbalance is small (<5%) and worth the simplicity."
 
 ---
@@ -584,6 +628,7 @@ vs. plan assumption of <10%
 **What**: Use NVIDIA's Collective Communications Library for all GPU-GPU coordination.
 
 **Why This Team**:
+
 - NCCL is optimized for NVIDIA GPUs (our target hardware)
 - Automatic topology detection (NVLink utilization)
 - Well-tested production library
@@ -591,6 +636,7 @@ vs. plan assumption of <10%
 **Limitation**: Requires same hardware family (can't mix V100 + A100).
 
 **Communication Team**:
+
 > "We're using NCCL because it's the fastest, most reliable communication layer for NVIDIA GPUs and automatically adapts to NVLink topology. This is non-negotiable for inference latency targets."
 
 ---
@@ -600,6 +646,7 @@ vs. plan assumption of <10%
 **What**: Start with single-node 4-GPU, validate before multi-node.
 
 **Why This Team**:
+
 - Debug complexity grows exponentially with network distance
 - Single-node has perfect synchronization (NVLink)
 - Proven path: 1 node 4-GPU → 2 nodes 8-GPU → clusters
@@ -607,6 +654,7 @@ vs. plan assumption of <10%
 **Timeline**: Multi-node support deferred to Phase 3.2 (Sprint 5).
 
 **Communication Team**:
+
 > "We're starting with single-node 4-GPU distribution because debugging network issues in multi-node setups is extremely difficult. Once we validate the architecture on a single node, scaling to multi-node becomes straightforward."
 
 ---
@@ -615,29 +663,29 @@ vs. plan assumption of <10%
 
 ### Tier 1: Critical Path Blockers (Resolve Before Sprint 1.1)
 
-| Risk                        | Mitigation                                      | Owner        | Due Date      |
-|-----------------------------|-------------------------------------------------|--------------|---------------|
-| KV-cache compression vague  | Complete ADR-002 with pseudocode               | @APEX, @VELOCITY | Dec 27, 2025 |
-| Load balancer undefined     | Complete ADR-003 with routing algorithm        | @ARCHITECT   | Dec 27, 2025  |
-| Weight distribution unclear | Add pseudocode to DISTRIBUTED_ARCHITECTURE.md  | @APEX        | Dec 24, 2025  |
-| Integration diagram missing | Create component data flow diagram              | @ARCHITECT   | Dec 27, 2025  |
+| Risk                        | Mitigation                                    | Owner            | Due Date     |
+| --------------------------- | --------------------------------------------- | ---------------- | ------------ |
+| KV-cache compression vague  | Complete ADR-002 with pseudocode              | @APEX, @VELOCITY | Dec 27, 2025 |
+| Load balancer undefined     | Complete ADR-003 with routing algorithm       | @ARCHITECT       | Dec 27, 2025 |
+| Weight distribution unclear | Add pseudocode to DISTRIBUTED_ARCHITECTURE.md | @APEX            | Dec 24, 2025 |
+| Integration diagram missing | Create component data flow diagram            | @ARCHITECT       | Dec 27, 2025 |
 
 ### Tier 2: High-Impact Mitigations (First 2 Weeks of Sprint 1)
 
-| Risk                                | Mitigation                                    | Owner       | Week  |
-|-------------------------------------|-----------------------------------------------|-------------|-------|
-| Communication overhead over budget  | Benchmark NCCL latencies on target hardware   | @VELOCITY   | Week1 |
-| Speedup target unvalidated          | Run toy model (1B param) on 4 GPU setup       | @APEX       | Week1 |
-| Distributed debugging nightmare     | Establish logging/profiling strategy (ADR-004)| @SENTRY     | Week1-2 |
-| KV-cache scaling concerns           | Model memory footprint for 8K, 16K contexts   | @VELOCITY   | Week2 |
+| Risk                               | Mitigation                                     | Owner     | Week    |
+| ---------------------------------- | ---------------------------------------------- | --------- | ------- |
+| Communication overhead over budget | Benchmark NCCL latencies on target hardware    | @VELOCITY | Week1   |
+| Speedup target unvalidated         | Run toy model (1B param) on 4 GPU setup        | @APEX     | Week1   |
+| Distributed debugging nightmare    | Establish logging/profiling strategy (ADR-004) | @SENTRY   | Week1-2 |
+| KV-cache scaling concerns          | Model memory footprint for 8K, 16K contexts    | @VELOCITY | Week2   |
 
 ### Tier 3: Medium-Impact Mitigations (Sprint 2-3)
 
-| Risk                     | Mitigation                                | Owner   | When        |
-|--------------------------|-------------------------------------------|---------|-------------|
-| Operational complexity   | Complete ADR-004 (debugging strategy)    | @SENTRY | Sprint 2.1  |
-| Failure recovery vague   | Complete ADR-005 (failure modes)         | @FORTRESS| Sprint 2.3  |
-| API design misses async  | Explicit async/streaming design in Sprint 2.1 | @APEX  | Sprint 2.1  |
+| Risk                    | Mitigation                                    | Owner     | When       |
+| ----------------------- | --------------------------------------------- | --------- | ---------- |
+| Operational complexity  | Complete ADR-004 (debugging strategy)         | @SENTRY   | Sprint 2.1 |
+| Failure recovery vague  | Complete ADR-005 (failure modes)              | @FORTRESS | Sprint 2.3 |
+| API design misses async | Explicit async/streaming design in Sprint 2.1 | @APEX     | Sprint 2.1 |
 
 ---
 
@@ -648,6 +696,7 @@ vs. plan assumption of <10%
 **Recommendation**: **PROCEED** with Sprint 1.1 under these conditions:
 
 #### Prerequisites Met ✅
+
 - [x] High-level architecture sound (row-wise TP + head-wise cache sharding)
 - [x] 4-GPU test environment available
 - [x] DISTRIBUTED_ARCHITECTURE.md provides theory foundation
@@ -655,6 +704,7 @@ vs. plan assumption of <10%
 - [x] @APEX team available and ready
 
 #### Prerequisites NOT Met ⚠️
+
 - [ ] ADR-002 (KV-cache compression) - MUST complete by Dec 27
 - [ ] ADR-003 (Load balancing strategy) - MUST complete by Dec 27
 - [ ] Weight distribution pseudocode - MUST complete by Dec 24
@@ -678,17 +728,20 @@ OVERALL: 🟡 YELLOW - Proceed with Sprint 1.1, finalize ADRs in parallel
 ### What @APEX Team Needs to Start
 
 **Immediate (Next Monday Morning)**:
+
 1. Clone repo, set up 4-GPU environment
 2. Run `DISTRIBUTED_ARCHITECTURE.md` sections 1-2 as design specs
 3. Implement `tensor_parallel.py` according to tensor parallelism section
 4. Implement `orchestrator.py` for rank management
 
 **By Mid-Week (Wednesday)**:
+
 1. Receive ADR-002 draft for KV-cache
 2. Receive ADR-003 draft for load balancing
 3. Begin integration planning for Sprint 1.2
 
 **By Week 1 Checkpoint (Friday)**:
+
 1. Validate weight distribution algorithm works end-to-end
 2. Run baseline speedup test on 4 GPUs
 3. Identify any architecture ambiguities before they compound
@@ -696,21 +749,25 @@ OVERALL: 🟡 YELLOW - Proceed with Sprint 1.1, finalize ADRs in parallel
 ### Weekly Architecture Review Focus
 
 **Week 1**: Validate tensor parallelism correctness
+
 - All-reduce timings match theory?
 - Weight sharding working correctly?
 - Speedup tracking toward 3.8x?
 
 **Week 2**: Finalize KV-cache strategy (prep for Sprint 1.2)
+
 - Compression algorithm locked in?
 - Decompression latency acceptable?
 - Integration points with TP clear?
 
 **Week 3**: Validate load balancing design (prep for Sprint 1.3)
+
 - Sticky session implementation strategy understood?
 - Request routing algorithm unambiguous?
 - Failover procedures defined?
 
 **Week 4**: Sprint 1 completion + Sprint 2 planning
+
 - All Sprint 1 deliverables met?
 - Performance targets achieved?
 - Lessons learned documented?
@@ -733,16 +790,13 @@ OVERALL: 🟡 YELLOW - Proceed with Sprint 1.1, finalize ADRs in parallel
    - Each GPU holds 1/4 of model weights
    - All GPUs process input together in parallel
    - Results synchronized via all-reduce (5-8ms)
-   
 2. **Distributed Memory**: Shard KV-cache by attention heads
    - No communication needed (heads are independent)
    - 4× cache storage enables 4× longer sequences
-   
 3. **Request Routing**: Sticky sessions maintain KV-cache affinity
    - User session A always routes to GPU 0
    - User session B always routes to GPU 1
    - Simple load balancing with <5% imbalance
-   
 4. **Result**: 3.8x speedup (25 → 95 tokens/sec) + 4× longer context
 
 **Why This Works**: Communication cost is small (<10%) because neural network computation is heavy (each layer is 1000× more compute than communication).
@@ -759,18 +813,19 @@ The Phase 3 Sprint Plan defines a **well-structured, achievable architecture** f
 
 ### Recommendations Summary
 
-| Priority | Action                                    | Owner      | Due Date    |
-|----------|-------------------------------------------|------------|-------------|
-| P0       | Complete ADR-002 (KV-cache)               | @APEX      | Dec 27      |
-| P0       | Complete ADR-003 (Load balancing)         | @ARCHITECT | Dec 27      |
-| P0       | Weight distribution pseudocode            | @APEX      | Dec 24      |
-| P1       | Architectural integration diagram         | @ARCHITECT | Dec 27      |
-| P1       | Communication overhead benchmark plan     | @VELOCITY  | Sprint 1 W1  |
-| P1       | Complete ADR-004 (Debugging strategy)     | @SENTRY    | Sprint 2    |
+| Priority | Action                                | Owner      | Due Date    |
+| -------- | ------------------------------------- | ---------- | ----------- |
+| P0       | Complete ADR-002 (KV-cache)           | @APEX      | Dec 27      |
+| P0       | Complete ADR-003 (Load balancing)     | @ARCHITECT | Dec 27      |
+| P0       | Weight distribution pseudocode        | @APEX      | Dec 24      |
+| P1       | Architectural integration diagram     | @ARCHITECT | Dec 27      |
+| P1       | Communication overhead benchmark plan | @VELOCITY  | Sprint 1 W1 |
+| P1       | Complete ADR-004 (Debugging strategy) | @SENTRY    | Sprint 2    |
 
 ### Sprint 1.1 Kickoff Status
 
 **CONDITIONAL GO** ✅ with prerequisites:
+
 - [x] Proceed with tensor parallelism implementation (well-specified)
 - ⚠️ Finalize ADR-002 & ADR-003 by Dec 27 (required before Sprint 1.3)
 - ⚠️ Complete architectural integration diagram (enables better team understanding)
