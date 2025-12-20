@@ -1,4 +1,5 @@
 # DISTRIBUTED INFERENCE ARCHITECTURE v1.0
+
 **RYZEN-LLM Phase 3: Tensor Parallelism & Multi-GPU Scaling**
 
 **Document Version**: 1.0-DRAFT  
@@ -13,6 +14,7 @@
 This document defines the distributed inference architecture for RYZEN-LLM Phase 3, enabling production-grade LLM serving across multiple GPUs with **tensor parallelism** as the primary scaling strategy.
 
 ### Design Goals
+
 1. **Scaling Efficiency**: 3.8-4.2x speedup on 4 GPUs (>95% efficiency)
 2. **Low Overhead**: <10% RPC overhead, <5ms communication latency
 3. **Production Ready**: Fault tolerance, monitoring, diagnostics
@@ -20,6 +22,7 @@ This document defines the distributed inference architecture for RYZEN-LLM Phase
 5. **Memory Efficient**: >95% GPU utilization with gradient checkpointing
 
 ### Key Decisions
+
 - **Parallelism Strategy**: Row-wise tensor parallelism (simplest, optimal for compute-bound inference)
 - **Communication Backend**: NCCL for GPU-native optimized collective operations
 - **Synchronization Model**: Synchronous all-reduce for correctness, with async optimization path
@@ -77,14 +80,14 @@ This document defines the distributed inference architecture for RYZEN-LLM Phase
 
 ### 1.2 Component Responsibilities
 
-| Component | Role | File | LOC Target |
-|-----------|------|------|-----------|
-| Architecture | Interface contracts | `architecture.py` | 150+ |
-| TensorParallel | Parallelized layers | `tensor_parallel.py` | 500+ |
-| Orchestrator | Process/rank management | `orchestrator.py` | 300+ |
-| ModelLoader | Distributed checkpoint loading | `model_loader.py` | 200+ |
-| Communication | NCCL optimization utilities | `communication.py` | 150+ |
-| Utils | Helpers (logging, debugging) | `utils.py` | 100+ |
+| Component      | Role                           | File                 | LOC Target |
+| -------------- | ------------------------------ | -------------------- | ---------- |
+| Architecture   | Interface contracts            | `architecture.py`    | 150+       |
+| TensorParallel | Parallelized layers            | `tensor_parallel.py` | 500+       |
+| Orchestrator   | Process/rank management        | `orchestrator.py`    | 300+       |
+| ModelLoader    | Distributed checkpoint loading | `model_loader.py`    | 200+       |
+| Communication  | NCCL optimization utilities    | `communication.py`   | 150+       |
+| Utils          | Helpers (logging, debugging)   | `utils.py`           | 100+       |
 
 ---
 
@@ -95,6 +98,7 @@ This document defines the distributed inference architecture for RYZEN-LLM Phase
 **Definition**: Partition model weights across devices along specific dimensions, computing partial results in parallel.
 
 **Row-Wise Parallelism** (Strategy for Dense Layers):
+
 ```
 Model: Linear(in=4096, out=4096)
 Strategy: Shard output dimension across 4 GPUs
@@ -110,6 +114,7 @@ Output (concatenated):            [y₀; y₁; y₂; y₃] ∈ ℝ^(B×4096)
 ```
 
 **Why Row-Wise for LLM Inference:**
+
 - Computation-bound: Matrix multiply is O(n²), communication is O(n)
 - Minimal communication: Only output is communicated (implicit in all-reduce)
 - Natural for attention layers: Heads naturally partition
@@ -120,6 +125,7 @@ Output (concatenated):            [y₀; y₁; y₂; y₃] ∈ ℝ^(B×4096)
 #### Linear Layers (Most Common)
 
 **RowParallelLinear**:
+
 ```
 Input:  x ∈ ℝ^(B×D_in)  [replicated across all ranks]
 Weight: W ∈ ℝ^(D_out×D_in)  [column-sharded across ranks]
@@ -134,6 +140,7 @@ Memory per GPU: (B × D_out/TP + D_in × D_out/TP) / GB
 ```
 
 **ColumnParallelLinear**:
+
 ```
 Input:  x ∈ ℝ^(B×D_in)  [row-sharded across ranks]
 Weight: W ∈ ℝ^(D_out×D_in)  [row-sharded across ranks]
@@ -177,6 +184,7 @@ Communication: One all_reduce for input distribution, one for output
 ### 2.3 KV-Cache Management (Critical for Inference)
 
 **KV-Cache Sharding Strategy**:
+
 ```
 Single-GPU KV-Cache Layout:
   k_cache: (B, L, num_heads, head_dim)  ∈ ℝ^(B×L×32×128)
@@ -201,6 +209,7 @@ Benefits:
 ### 3.1 Communication Model
 
 The system uses **NCCL** (NVIDIA Collective Communications Library) for:
+
 - **Optimized hardware mapping**: Uses NVLink topology
 - **Deterministic behavior**: Well-defined semantics
 - **High throughput**: Native NVIDIA GPU optimizations
@@ -258,12 +267,12 @@ Cost: O(log P) with tree broadcast, ~3ms for 4 GPUs
 
 ### 3.3 Communication Optimization Opportunities
 
-| Optimization | Technique | Expected Gain | Timeline |
-|--------------|-----------|---------------|----------|
-| Overlap compute & comm | Issue collective early, kernel overlap | 20% | Sprint 1.2 |
-| Ring all-reduce | Topology-aware reduction | 15% | Sprint 1.2 |
-| Gradient accumulation | Reduce all-reduce frequency | 30% | Sprint 1.3 |
-| Pipeline parallelism | Combine with tensor parallelism | 40% | Sprint 2 |
+| Optimization           | Technique                              | Expected Gain | Timeline   |
+| ---------------------- | -------------------------------------- | ------------- | ---------- |
+| Overlap compute & comm | Issue collective early, kernel overlap | 20%           | Sprint 1.2 |
+| Ring all-reduce        | Topology-aware reduction               | 15%           | Sprint 1.2 |
+| Gradient accumulation  | Reduce all-reduce frequency            | 30%           | Sprint 1.3 |
+| Pipeline parallelism   | Combine with tensor parallelism        | 40%           | Sprint 2   |
 
 ---
 
@@ -272,6 +281,7 @@ Cost: O(log P) with tree broadcast, ~3ms for 4 GPUs
 ### 4.1 Weight Distribution Strategy
 
 **Model Example**: Llama2-7B
+
 ```
 Layer Structure:
   Embedding: (vocab_size, hidden_dim) = (32000, 4096)
@@ -331,6 +341,7 @@ Target: Stay <30 GB to fit on A100-40GB with headroom
 ### 5.1 Theoretical Speedup
 
 **Assumptions**:
+
 - LLM inference = 90% compute, 10% communication
 - Linear layer: B × D_in × D_out/TP operations per GPU
 - All-reduce: 2 × D_out × B latency
@@ -350,12 +361,12 @@ More realistic with communication overlap:
 
 ### 5.2 Measured Scaling Numbers (Target)
 
-| GPUs | Throughput | Speedup | Efficiency | Target Met |
-|------|-----------|---------|------------|-----------|
-| 1    | 10 tok/s  | 1.0x    | 100%       | Baseline  |
-| 2    | 19 tok/s  | 1.9x    | 95%        | ✓ Path clear |
-| 4    | 38 tok/s  | 3.8x    | 95%        | ✓ Target  |
-| 8    | 72 tok/s  | 7.2x    | 90%        | ✓ Future  |
+| GPUs | Throughput | Speedup | Efficiency | Target Met   |
+| ---- | ---------- | ------- | ---------- | ------------ |
+| 1    | 10 tok/s   | 1.0x    | 100%       | Baseline     |
+| 2    | 19 tok/s   | 1.9x    | 95%        | ✓ Path clear |
+| 4    | 38 tok/s   | 3.8x    | 95%        | ✓ Target     |
+| 8    | 72 tok/s   | 7.2x    | 90%        | ✓ Future     |
 
 **Efficiency** = Speedup / Number of GPUs
 
@@ -368,17 +379,17 @@ More realistic with communication overlap:
 ```
 Input Distribution (Broadcast or Replicate):
   All ranks start with same input_ids
-  
+
   Layer 1 (RowParallelLinear):
     Input:  replicated [B, D_in]
     Output: row-sharded [B, D_out]
     Sync:   implicit in all-reduce
-  
+
   Layer 2 (ColumnParallelLinear):
     Input:  row-sharded [B, D_in]
     Output: replicated [B, D_out]
     Sync:   no extra sync needed
-  
+
   Layer 3 (Attention):
     Input:  replicated [B, L, D]
     Compute: head-wise sharded (no cross-GPU head communication)
@@ -407,6 +418,7 @@ All-Reduce Timing:
 ### 7.1 Testing Approach
 
 **Multi-Layer Validation**:
+
 1. **Unit Tests**: Individual layer parallelization correctness
 2. **Integration Tests**: Full model forward/backward pass
 3. **Numerical Tests**: Output precision vs single-GPU baseline
@@ -421,7 +433,7 @@ distributed_output = model_distributed(batch)
 
 # Float32 allows ~1e-6 relative error
 assert torch.allclose(
-    single_gpu_output, 
+    single_gpu_output,
     distributed_output,
     rtol=1e-5,        # Relative tolerance
     atol=1e-7         # Absolute tolerance
@@ -431,7 +443,7 @@ assert torch.allclose(
 loss_single.backward()
 loss_distributed.backward()
 
-for param_single, param_distributed in zip(model_single_gpu.parameters(), 
+for param_single, param_distributed in zip(model_single_gpu.parameters(),
                                             model_distributed.parameters()):
     assert torch.allclose(
         param_single.grad,
@@ -447,12 +459,12 @@ for param_single, param_distributed in zip(model_single_gpu.parameters(),
 
 ### 8.1 Failure Modes & Mitigations
 
-| Failure Mode | Impact | Detection | Recovery |
-|--------------|--------|-----------|----------|
-| GPU OOM | Training crashes | GPU memory error | Reduce batch size, enable checkpointing |
-| Rank hang | System deadlock | Timeout (30s) | Graceful shutdown, checkpoint save |
-| NVLink failure | Degraded comm | NCCL error code | Fallback to host memory |
-| Process crash | Training loss | Exit code != 0 | Restart from latest checkpoint |
+| Failure Mode   | Impact           | Detection        | Recovery                                |
+| -------------- | ---------------- | ---------------- | --------------------------------------- |
+| GPU OOM        | Training crashes | GPU memory error | Reduce batch size, enable checkpointing |
+| Rank hang      | System deadlock  | Timeout (30s)    | Graceful shutdown, checkpoint save      |
+| NVLink failure | Degraded comm    | NCCL error code  | Fallback to host memory                 |
+| Process crash  | Training loss    | Exit code != 0   | Restart from latest checkpoint          |
 
 ### 8.2 Checkpoint Strategy
 
@@ -583,22 +595,26 @@ Compatibility:
 **Decision**: Implement tensor parallelism using row-wise weight sharding as primary strategy.
 
 **Rationale**:
+
 - Simplest to implement and debug
 - Natural fit for attention heads (head-wise = row-wise on head dimension)
 - Minimizes communication: only final gather/reduce per layer
 - Proven effective in Megatron-LM and Llama2 distributed training
 
 **Alternatives Considered**:
+
 - Column-wise: More complex, similar speedup
 - Sequence parallelism: Requires sequence length awareness, not ideal for inference
 - Expert parallelism: Requires MoE models, not applicable to Llama2
 
 **Trade-offs**:
+
 - Communication cost: ~10% per all-reduce (acceptable)
 - Memory savings: ~4x on 4 GPUs
 - Implementation complexity: Low (preferred)
 
 **Consequences**:
+
 - ✓ Linear scaling with GPU count (up to model capacity)
 - ✓ Easy to extend to 8+ GPUs
 - ✓ Good for both training and inference
@@ -614,21 +630,25 @@ Compatibility:
 **Decision**: Use NCCL as communication backend for multi-GPU systems.
 
 **Rationale**:
+
 - Optimized for NVIDIA GPUs (our target hardware)
 - Deterministic collective operations
 - Lowest latency for all-reduce/all-gather
 - Battle-tested in Megatron, DeepSpeed, vLLM
 
 **Alternatives Considered**:
+
 - Gloo: CPU-based, slower for GPU tensors
 - MPI: Generic, requires external MPI library
 
 **Trade-offs**:
+
 - NVIDIA GPU-only (acceptable, that's our target)
 - Requires NCCL library installation
 - No CPU fallback (acceptable for inference)
 
 **Consequences**:
+
 - ✓ ~5ms all-reduce latency for 4 GPUs
 - ✓ Automatic topology-aware optimization
 - ✓ No additional performance tuning needed initially
@@ -644,16 +664,19 @@ Compatibility:
 **Decision**: Phase 1 uses synchronous all-reduce. Async optimization deferred to Sprint 1.2.
 
 **Rationale**:
+
 - Synchronous is easier to reason about and debug
 - Gets us to target efficiency (95%+) without complexity
 - Asynchronous adds 20% complexity for 10-15% speedup
 - Communication overhead already acceptable (<10%)
 
 **Future Plan**:
+
 - Sprint 1.2: Implement async gradient accumulation
 - Sprint 1.3: Explore overlapped communication kernel launch
 
 **Trade-offs**:
+
 - Potential 5-10% speedup left on table initially
 - Simpler correctness validation (preferred)
 - Easier debugging and monitoring
@@ -668,15 +691,18 @@ Compatibility:
 **Decision**: Store checkpoints in distributed format (one file per rank) in shared filesystem.
 
 **Rationale**:
+
 - Avoids bottleneck of rank 0 gathering all weights
 - Enables efficient checkpoint saving and loading
 - Allows scaling to 100+ GPU systems
 - Each rank saves/loads independently in parallel
 
 **Alternative**:
+
 - Centralized checkpoint (rank 0 saves all): scales poorly, risk of OOM
 
 **Implementation**:
+
 ```
 Checkpoint directory structure:
   checkpoints/
@@ -707,6 +733,7 @@ Checkpoint directory structure:
 ```
 
 **Unit Tests** (tensor_parallel, layers, communication primitives):
+
 - RowParallelLinear correctness
 - ColumnParallelLinear correctness
 - AttentionParallel correctness
@@ -714,12 +741,14 @@ Checkpoint directory structure:
 - Gradient synchronization
 
 **Integration Tests** (multi-GPU, full models):
+
 - 2-GPU forward pass matching
 - 4-GPU forward pass matching
 - Gradient flow correctness
 - Checkpoint save/load
 
 **E2E Tests** (realistic scenarios):
+
 - Full model inference pipeline
 - Scaling from 1 → 2 → 4 GPUs
 - Performance benchmarking
@@ -727,12 +756,12 @@ Checkpoint directory structure:
 
 ### 12.2 Test Targets
 
-| Component | Unit Tests | Integration | E2E | Coverage Target |
-|-----------|-----------|-------------|-----|-----------------|
-| tensor_parallel | 80+ | 30+ | 10+ | 95% |
-| orchestrator | 60+ | 20+ | 5+ | 90% |
-| model_loader | 40+ | 15+ | 3+ | 85% |
-| communication | 30+ | 10+ | 2+ | 80% |
+| Component       | Unit Tests | Integration | E2E | Coverage Target |
+| --------------- | ---------- | ----------- | --- | --------------- |
+| tensor_parallel | 80+        | 30+         | 10+ | 95%             |
+| orchestrator    | 60+        | 20+         | 5+  | 90%             |
+| model_loader    | 40+        | 15+         | 3+  | 85%             |
+| communication   | 30+        | 10+         | 2+  | 80%             |
 
 **Overall Coverage Target**: >90% for Sprint 1.1 completion
 
@@ -742,14 +771,14 @@ Checkpoint directory structure:
 
 ### 13.1 Sprint 1.1 Success Criteria
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| 4-GPU Speedup | 3.8-4.2x | TBD | To measure |
-| Scaling Efficiency | >95% | TBD | To measure |
-| All-Reduce Latency | <5ms | TBD | To measure |
-| RPC Overhead | <10% | TBD | To measure |
-| Code Coverage | >90% | TBD | To measure |
-| Memory Efficiency | >95% | TBD | To measure |
+| Metric             | Target   | Current | Status     |
+| ------------------ | -------- | ------- | ---------- |
+| 4-GPU Speedup      | 3.8-4.2x | TBD     | To measure |
+| Scaling Efficiency | >95%     | TBD     | To measure |
+| All-Reduce Latency | <5ms     | TBD     | To measure |
+| RPC Overhead       | <10%     | TBD     | To measure |
+| Code Coverage      | >90%     | TBD     | To measure |
+| Memory Efficiency  | >95%     | TBD     | To measure |
 
 ### 13.2 Measurement Methodology
 
@@ -762,7 +791,7 @@ with torch.no_grad():
     # Warmup
     for _ in range(10):
         _ = model(input_ids, attention_mask)
-    
+
     # Timed run
     start = time.time()
     for i in range(100):
@@ -770,7 +799,7 @@ with torch.no_grad():
         # Synchronize GPU
         torch.cuda.synchronize()
     elapsed = time.time() - start
-    
+
     tokens_per_sec = (100 * batch_size * seq_len) / elapsed
     speedup = throughput_4gpu / throughput_1gpu
     efficiency = speedup / 4  # For 4 GPUs
@@ -802,27 +831,29 @@ with torch.no_grad():
 
 ## 15. Glossary & Terminology
 
-| Term | Definition |
-|------|-----------|
-| **Rank** | Process ID in distributed system (0 to world_size-1) |
-| **World Size** | Total number of processes/GPUs |
-| **TP Size** | Tensor parallelism degree (typically = world_size) |
-| **All-Reduce** | Collective operation: compute reduction, broadcast to all ranks |
-| **NCCL** | NVIDIA Collective Communications Library |
-| **Row-Wise** | Sharding output dimension of matrix |
-| **Column-Wise** | Sharding input dimension of matrix |
-| **KV-Cache** | Stored key/value states for fast inference |
-| **Barrier** | Synchronization point: all ranks wait here |
+| Term            | Definition                                                      |
+| --------------- | --------------------------------------------------------------- |
+| **Rank**        | Process ID in distributed system (0 to world_size-1)            |
+| **World Size**  | Total number of processes/GPUs                                  |
+| **TP Size**     | Tensor parallelism degree (typically = world_size)              |
+| **All-Reduce**  | Collective operation: compute reduction, broadcast to all ranks |
+| **NCCL**        | NVIDIA Collective Communications Library                        |
+| **Row-Wise**    | Sharding output dimension of matrix                             |
+| **Column-Wise** | Sharding input dimension of matrix                              |
+| **KV-Cache**    | Stored key/value states for fast inference                      |
+| **Barrier**     | Synchronization point: all ranks wait here                      |
 
 ---
 
 ## 16. References & Resources
 
 ### Research Papers
+
 - Shoeybi et al. (2019): "Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism"
 - Rajbhandari et al. (2019): "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models"
 
 ### Implementation References
+
 - [PyTorch Distributed](https://pytorch.org/docs/stable/distributed.html)
 - [Megatron-LM Codebase](https://github.com/NVIDIA/Megatron-LM)
 - [DeepSpeed](https://github.com/microsoft/DeepSpeed)
@@ -833,18 +864,21 @@ with torch.no_grad():
 ## 17. Next Steps & Timeline
 
 ### Immediate (Week 1: Jan 6-10)
+
 - ✓ Architecture document complete (this file)
 - [ ] Architecture review meeting (Friday Jan 9)
 - [ ] Begin tensor_parallel.py skeleton
 - [ ] Prepare 2-GPU hardware
 
 ### Short Term (Week 2: Jan 13-17)
+
 - [ ] Implement all 3 core components
 - [ ] Achieve >90% test coverage
 - [ ] Validate 4-GPU scaling
 - [ ] Go/No-Go gate decision (Jan 17)
 
 ### Medium Term (Sprint 1.2: Jan 20-Feb 3)
+
 - [ ] Communication optimization
 - [ ] Performance tuning
 - [ ] Production hardening
