@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ryzen-llm"
-version = "0.1.0"
+version = "2.0.0"
 description = "CPU-First Large Language Model Infrastructure for AMD Ryzen"
 readme = "README.md"
 requires-python = ">=3.11"
