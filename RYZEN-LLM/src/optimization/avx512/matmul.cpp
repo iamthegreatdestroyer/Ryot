@@ -240,9 +240,10 @@ namespace ryzen_llm
                                 // Handle remaining elements (non-vectorized tail)
                                 for (; k < k_end; ++k)
                                 {
-                                    const int8_t quantized_x = activations.values[m * K + k];
-                                    const int8_t ternary_w = weights.values[k * N + n];
-                                    const float weight_scale = weights.get_scale(k * N + n);
+                                    const int8_t ternary_w = weights.values[m * K + k];
+                                    // m and k are uint32_t; ensure index expression matches get_scale(uint32_t)
+                                    const float weight_scale = weights.get_scale(static_cast<uint32_t>(m * K + k));
+                                    const int8_t quantized_x = activations.values[k * N + n];
 
                                     const float dequantized_x =
                                         (static_cast<float>(quantized_x) - activation_zero_point) * activation_scale;
