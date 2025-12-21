@@ -29,24 +29,41 @@ class DistributedCheckpointLoader:
         ├─ weights_rank1.pt
         ├─ weights_rank2.pt
         └─ weights_rank3.pt
+        
+    Features:
+    - Zero-copy loading where possible
+    - Memory-mapped loading for large checkpoints
+    - Asynchronous loading with prefetching
     """
     
-    def __init__(self, checkpoint_dir: str, rank: int, world_size: int):
+    def __init__(self, checkpoint_dir: str, rank: int, world_size: int,
+                 use_memory_map: bool = True, enable_prefetch: bool = True):
         """Initialize distributed checkpoint loader.
         
         Args:
             checkpoint_dir: Directory containing checkpoint files
             rank: Current rank
             world_size: Total number of ranks
+            use_memory_map: Use memory-mapped loading for efficiency
+            enable_prefetch: Enable asynchronous prefetching
         """
         self.checkpoint_dir = Path(checkpoint_dir)
         self.rank = rank
         self.world_size = world_size
+        self.use_memory_map = use_memory_map
+        self.enable_prefetch = enable_prefetch
         
         if not self.checkpoint_dir.exists():
             raise FileNotFoundError(f"Checkpoint directory not found: {checkpoint_dir}")
         
+        # Performance tracking
+        self.load_times = []
+        self.memory_peaks = []
+        self.prefetch_cache = {}  # Cache for prefetched weights
+        self.use_prefetch = enable_prefetch
+        
         logger.info(f"DistributedCheckpointLoader initialized: {checkpoint_dir}")
+        logger.info(f"Zero-copy: {use_memory_map}, Prefetch: {enable_prefetch}")
     
     def load_metadata(self) -> Dict[str, Any]:
         """Load checkpoint metadata.
@@ -77,8 +94,48 @@ class DistributedCheckpointLoader:
         
         return metadata
     
+    def prefetch_weights(self, prefetch_ahead: int = 1) -> None:
+        """Prefetch weights for future ranks to reduce loading latency.
+        
+        Args:
+            prefetch_ahead: Number of ranks to prefetch ahead
+        """
+        if not self.use_prefetch:
+            return
+            
+        import threading
+        
+        def prefetch_worker(rank_offset: int):
+            """Worker function to prefetch weights in background."""
+            prefetch_rank = (self.rank + rank_offset) % self.world_size
+            prefetch_path = self.checkpoint_dir / f"weights_rank{prefetch_rank}.pt"
+            
+            if prefetch_path.exists():
+                try:
+                    # Load into prefetch cache
+                    weights = torch.load(prefetch_path, map_location='cpu', mmap=self.use_memory_map)
+                    self.prefetch_cache[prefetch_rank] = weights
+                    logger.debug(f"Prefetched weights for rank {prefetch_rank}")
+                except Exception as e:
+                    logger.warning(f"Failed to prefetch rank {prefetch_rank}: {e}")
+        
+        # Start prefetch threads
+        threads = []
+        for offset in range(1, prefetch_ahead + 1):
+            thread = threading.Thread(target=prefetch_worker, args=(offset,))
+            thread.daemon = True
+            thread.start()
+            threads.append(thread)
+        
+        # Wait for prefetch completion
+        for thread in threads:
+            thread.join(timeout=5.0)  # 5 second timeout
+    
     def load_rank_weights(self) -> Dict[str, torch.Tensor]:
         """Load weights for current rank from checkpoint.
+        
+        Supports zero-copy loading and memory mapping for efficiency.
+        Checks prefetch cache first for improved performance.
         
         Returns:
             Dictionary of weight tensors
@@ -86,15 +143,47 @@ class DistributedCheckpointLoader:
         Raises:
             FileNotFoundError: If rank weights not found
         """
+        import time
+        start_time = time.time()
+        
+        # Check prefetch cache first
+        if self.rank in self.prefetch_cache:
+            weights = self.prefetch_cache.pop(self.rank)
+            load_time = time.time() - start_time
+            self.load_times.append(load_time)
+            logger.info(f"Rank {self.rank}: loaded {len(weights)} weights from prefetch cache")
+            logger.debug(f"Rank {self.rank}: cache load time: {load_time:.3f}s")
+            return weights
+        
         weights_path = self.checkpoint_dir / f"weights_rank{self.rank}.pt"
         
         if not weights_path.exists():
             raise FileNotFoundError(f"Rank {self.rank} weights not found: {weights_path}")
         
-        weights = torch.load(weights_path, map_location='cpu')
-        logger.info(f"Rank {self.rank}: loaded {len(weights)} weight tensors")
-        
-        return weights
+        try:
+            if self.use_memory_map:
+                # Memory-mapped loading for zero-copy where possible
+                weights = torch.load(weights_path, map_location='cpu', mmap=True)
+                logger.info(f"Rank {self.rank}: loaded {len(weights)} weights (memory-mapped)")
+            else:
+                # Standard loading
+                weights = torch.load(weights_path, map_location='cpu')
+                logger.info(f"Rank {self.rank}: loaded {len(weights)} weights")
+            
+            load_time = time.time() - start_time
+            self.load_times.append(load_time)
+            
+            # Track memory usage
+            if torch.cuda.is_available():
+                self.memory_peaks.append(torch.cuda.max_memory_allocated() / (1024**3))
+            
+            logger.debug(f"Rank {self.rank}: load time: {load_time:.3f}s")
+            
+            return weights
+            
+        except Exception as e:
+            logger.error(f"Rank {self.rank}: failed to load weights: {e}")
+            raise RuntimeError(f"Weight loading failed: {e}")
     
     def load_into_model(self, model: nn.Module) -> None:
         """Load checkpoint weights into model.
@@ -106,6 +195,10 @@ class DistributedCheckpointLoader:
             RuntimeError: If weight loading fails
         """
         try:
+            # Start prefetching for next ranks
+            if self.use_prefetch:
+                self.prefetch_weights(prefetch_ahead=1)
+            
             weights = self.load_rank_weights()
             # Distribute weights to appropriate model layers
             # Implementation depends on tensor parallelism strategy
@@ -113,6 +206,27 @@ class DistributedCheckpointLoader:
         except Exception as e:
             logger.error(f"Rank {self.rank}: failed to load weights: {e}")
             raise RuntimeError(f"Weight loading failed: {e}")
+    
+    def get_performance_stats(self) -> Dict[str, float]:
+        """Get performance statistics for loading operations.
+        
+        Returns:
+            Dictionary with performance metrics
+        """
+        if not self.load_times:
+            return {}
+        
+        return {
+            'avg_load_time': sum(self.load_times) / len(self.load_times),
+            'max_load_time': max(self.load_times),
+            'min_load_time': min(self.load_times),
+            'total_load_time': sum(self.load_times),
+            'load_count': len(self.load_times),
+            'avg_memory_peak_gb': sum(self.memory_peaks) / len(self.memory_peaks) if self.memory_peaks else 0.0,
+            'max_memory_peak_gb': max(self.memory_peaks) if self.memory_peaks else 0.0,
+            'prefetch_enabled': self.use_prefetch,
+            'memory_map_enabled': self.use_memory_map
+        }
 
 
 class WeightDistributor:

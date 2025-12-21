@@ -22,10 +22,12 @@ from .architecture import (
     CommunicationHandler,
     ParallelModelWrapper,
 )
+from .bitnet_parallel import BitNetParallelModelWrapper
 
 __all__ = [
     "__version__",
     "DistributedConfig",
     "CommunicationHandler",
     "ParallelModelWrapper",
+    "BitNetParallelModelWrapper",
 ]

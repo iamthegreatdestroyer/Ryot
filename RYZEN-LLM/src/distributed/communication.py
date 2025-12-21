@@ -175,6 +175,89 @@ class CommunicationProfiler:
             logger.info(f"  P95: {stats['p95_ms']:.3f} ms")
 
 
+class NCCLCommunicator:
+    """NCCL-based communication handler for tensor parallelism.
+    
+    Provides high-level interface for collective operations used in
+    distributed inference.
+    """
+    
+    def __init__(self):
+        """Initialize NCCL communicator."""
+        self.initialized = torch.distributed.is_initialized()
+        if not self.initialized:
+            logger.warning("torch.distributed not initialized - operations will be no-ops")
+    
+    def all_reduce(self, tensor: torch.Tensor, op: str = "sum") -> torch.Tensor:
+        """Perform all-reduce operation.
+        
+        Args:
+            tensor: Input tensor
+            op: Reduction operation ("sum", "mean", "max", "min")
+            
+        Returns:
+            Reduced tensor
+        """
+        if not self.initialized:
+            # No-op for CPU-only testing
+            return tensor
+            
+        if op == "sum":
+            dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+        elif op == "mean":
+            dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+            tensor.div_(dist.get_world_size())
+        elif op == "max":
+            dist.all_reduce(tensor, op=dist.ReduceOp.MAX)
+        elif op == "min":
+            dist.all_reduce(tensor, op=dist.ReduceOp.MIN)
+        else:
+            raise ValueError(f"Unsupported reduction operation: {op}")
+            
+        return tensor
+    
+    def all_gather(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Perform all-gather operation.
+        
+        Args:
+            tensor: Input tensor
+            
+        Returns:
+            Gathered tensor from all ranks
+        """
+        if not self.initialized:
+            # No-op for CPU-only testing
+            return tensor
+            
+        world_size = dist.get_world_size()
+        output_tensors = [torch.empty_like(tensor) for _ in range(world_size)]
+        dist.all_gather(output_tensors, tensor)
+        
+        return torch.stack(output_tensors, dim=0)
+    
+    def broadcast(self, tensor: torch.Tensor, src: int = 0) -> torch.Tensor:
+        """Broadcast tensor from source rank to all ranks.
+        
+        Args:
+            tensor: Tensor to broadcast
+            src: Source rank
+            
+        Returns:
+            Broadcast tensor
+        """
+        if not self.initialized:
+            # No-op for CPU-only testing
+            return tensor
+            
+        dist.broadcast(tensor, src=src)
+        return tensor
+    
+    def barrier(self):
+        """Synchronization barrier across all ranks."""
+        if self.initialized:
+            dist.barrier()
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logger.info("Communication utilities module loaded")
