@@ -10,12 +10,14 @@ set(OPTIMIZATION_SOURCES
     memory/kv_cache.cpp
     memory/kv_cache_optimized.cpp
     memory/pool.cpp
+    ../recycler/basic_recycler.cpp
 )
 
 add_library(ryzen_llm_optimization STATIC ${OPTIMIZATION_SOURCES})
 
 target_include_directories(ryzen_llm_optimization PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../recycler
 )
 
 target_link_libraries(ryzen_llm_optimization

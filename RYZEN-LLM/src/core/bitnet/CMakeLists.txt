@@ -21,6 +21,7 @@ target_include_directories(ryzen_llm_bitnet PUBLIC
 # Link with T-MAC library and OpenMP
 target_link_libraries(ryzen_llm_bitnet PUBLIC
     ryzen_llm_tmac
+    ryzen_llm_optimization
     OpenMP::OpenMP_CXX
 )
 

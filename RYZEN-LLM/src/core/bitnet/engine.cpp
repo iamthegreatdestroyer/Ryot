@@ -23,15 +23,38 @@ namespace ryzen_llm
         bitnet::BitNetEngine::BitNetEngine(const ModelConfig &config)
             : config_(config), q_weights_(config.num_layers, TernaryWeight(config.hidden_size, config.hidden_size)), k_weights_(config.num_layers, TernaryWeight(config.hidden_size, config.hidden_size)), v_weights_(config.num_layers, TernaryWeight(config.hidden_size, config.hidden_size)), o_weights_(config.num_layers, TernaryWeight(config.hidden_size, config.hidden_size)), gate_weights_(config.num_layers, TernaryWeight(config.hidden_size, config.intermediate_size)), up_weights_(config.num_layers, TernaryWeight(config.hidden_size, config.intermediate_size)), down_weights_(config.num_layers, TernaryWeight(config.intermediate_size, config.hidden_size)), attn_norm_weights_(config.num_layers, std::vector<float>(config.hidden_size, 1.0f)), mlp_norm_weights_(config.num_layers, std::vector<float>(config.hidden_size, 1.0f)), final_norm_weights_(config.hidden_size, 1.0f), lm_head_weights_(config.hidden_size * config.vocab_size, 0.0f), hidden_states_(config.hidden_size, 0.0f), residual_(config.hidden_size, 0.0f), attn_output_(config.hidden_size, 0.0f), mlp_output_(config.hidden_size, 0.0f)
         {
-            // Initialize KV caches
-            kv_caches_.reserve(config.num_layers);
-            for (uint32_t i = 0; i < config.num_layers; ++i)
+            // Initialize advanced KV cache manager
+            memory::KVCacheConfig kv_config;
+            kv_config.num_layers = config.num_layers;
+            kv_config.num_heads = config.num_heads;
+            kv_config.head_dim = config.head_dim;
+            kv_config.max_batch_size = 1;                                              // Single sequence for now
+            kv_config.block_size = 16;                                                 // 16 tokens per block
+            kv_config.num_blocks = (config.max_seq_length / kv_config.block_size) * 2; // 2x capacity
+            kv_config.enable_quantization = false;                                     // Start without quantization
+            kv_config.enable_prefetching = true;
+
+            kv_cache_manager_ = std::make_unique<memory::KVCacheManager>(kv_config);
+
+            // Allocate sequence for inference (sequence ID = 0)
+            kv_cache_manager_->AllocateSequence(0, config.max_seq_length);
+
+            // Initialize speculative decoder if enabled
+            if (config.use_speculative_decoding)
             {
-                kv_caches_.push_back(
-                    std::make_unique<KVCache>(
-                        config.max_seq_length,
-                        config.num_heads,
-                        config.head_dim));
+                speculative::SpeculativeConfig spec_config;
+                spec_config.draft_config.vocab_size = config.vocab_size;
+                spec_config.draft_config.hidden_size = config.hidden_size;
+                spec_config.draft_config.num_layers = 6; // Smaller draft model
+                spec_config.draft_config.num_heads = config.num_heads;
+                spec_config.verifier_config.vocab_size = config.vocab_size;
+                spec_config.verifier_config.hidden_size = config.hidden_size;
+                spec_config.verifier_config.num_layers = config.num_layers;
+                spec_config.verifier_config.num_heads = config.num_heads;
+                spec_config.enable_speculative_decoding = true;
+                spec_config.batch_size = 1;
+
+                speculative_decoder_ = std::make_unique<speculative::SpeculativeDecoder>(spec_config);
             }
 
             // Initialize T-MAC engine if enabled
@@ -456,24 +479,42 @@ namespace ryzen_llm
             }
 
             // Generate new tokens (decode phase)
-            for (uint32_t i = 0; i < gen_config.max_tokens; ++i)
+            if (config_.use_speculative_decoding && speculative_decoder_)
             {
-                const uint32_t position = static_cast<uint32_t>(input_tokens.size()) + i;
-                const uint32_t last_token = output_tokens.back();
+                // Use speculative decoding for accelerated generation
+                std::vector<int> prefix_int(output_tokens.begin(), output_tokens.end());
+                std::vector<int> new_tokens = speculative_decoder_->decode_next_tokens(prefix_int, gen_config.max_tokens);
 
-                // Forward pass
-                std::vector<float> logits = forward(last_token, position);
-
-                // Sample next token
-                uint32_t next_token = sample_token(logits, gen_config);
-
-                // Check for EOS token (commonly token 2 or 0)
-                if (next_token == 2 || next_token == 0)
+                // Convert back to uint32_t and add to output
+                for (int token : new_tokens)
                 {
-                    break;
+                    if (token == 2 || token == 0) // EOS tokens
+                        break;
+                    output_tokens.push_back(static_cast<uint32_t>(token));
                 }
+            }
+            else
+            {
+                // Standard autoregressive generation
+                for (uint32_t i = 0; i < gen_config.max_tokens; ++i)
+                {
+                    const uint32_t position = static_cast<uint32_t>(input_tokens.size()) + i;
+                    const uint32_t last_token = output_tokens.back();
 
-                output_tokens.push_back(next_token);
+                    // Forward pass
+                    std::vector<float> logits = forward(last_token, position);
+
+                    // Sample next token
+                    uint32_t next_token = sample_token(logits, gen_config);
+
+                    // Check for EOS token (commonly token 2 or 0)
+                    if (next_token == 2 || next_token == 0)
+                    {
+                        break;
+                    }
+
+                    output_tokens.push_back(next_token);
+                }
             }
 
             return output_tokens;
@@ -639,20 +680,30 @@ namespace ryzen_llm
             // Apply rotary positional embeddings
             apply_rotary_embeddings(q.data(), k.data(), position, head_dim);
 
-            // Store K, V in cache
-            auto &kv_cache = kv_caches_[layer_idx];
-            const uint32_t cache_offset = position * num_heads * head_dim;
+            // Store K, V in advanced cache manager
+            const uint64_t sequence_id = 0; // Single sequence for now
 
-            std::copy(k.begin(), k.end(), kv_cache->k_cache.begin() + cache_offset);
-            std::copy(v.begin(), v.end(), kv_cache->v_cache.begin() + cache_offset);
+            // Get cache pointers for current position
+            float *k_cache_ptr = kv_cache_manager_->GetKeyCache(sequence_id, layer_idx, position);
+            float *v_cache_ptr = kv_cache_manager_->GetValueCache(sequence_id, layer_idx, position);
 
-            if (position + 1 > kv_cache->current_length)
+            if (k_cache_ptr && v_cache_ptr)
             {
-                kv_cache->current_length = position + 1;
+                // Copy K and V to cache
+                std::copy(k.begin(), k.end(), k_cache_ptr);
+                std::copy(v.begin(), v.end(), v_cache_ptr);
+
+                // Update cache length
+                kv_cache_manager_->AppendTokens(sequence_id, 1);
             }
 
+            // Get current sequence length
+            uint32_t current_length;
+            const float *k_sequence = kv_cache_manager_->GetKeySequence(sequence_id, layer_idx, current_length);
+            const float *v_sequence = kv_cache_manager_->GetValueSequence(sequence_id, layer_idx, current_length);
+
             // Multi-head attention
-            std::vector<float> attn_scores(kv_cache->current_length, 0.0f);
+            std::vector<float> attn_scores(current_length, 0.0f);
             std::vector<float> head_output(head_dim, 0.0f);
             std::fill(output, output + h, 0.0f);
 
@@ -662,34 +713,33 @@ namespace ryzen_llm
             {
                 const uint32_t head_offset = head * head_dim;
 
-                // Compute attention scores: Q @ K^T
-                for (uint32_t t = 0; t < kv_cache->current_length; ++t)
+                // Compute attention scores: Q @ K^T using cached sequence
+                for (uint32_t t = 0; t < current_length; ++t)
                 {
                     float score = 0.0f;
                     const uint32_t k_offset = t * num_heads * head_dim + head_offset;
 
                     for (uint32_t d = 0; d < head_dim; ++d)
                     {
-                        score += q[head_offset + d] * kv_cache->k_cache[k_offset + d];
+                        score += q[head_offset + d] * k_sequence[k_offset + d];
                     }
 
                     attn_scores[t] = score * scale;
                 }
 
                 // Softmax
-                // kv_cache->current_length is size_t-like; cast to uint32_t for softmax
-                softmax(attn_scores.data(), static_cast<uint32_t>(kv_cache->current_length));
+                softmax(attn_scores.data(), current_length);
 
-                // Weighted sum of values: softmax(QK^T) @ V
+                // Weighted sum of values: softmax(QK^T) @ V using cached sequence
                 std::fill(head_output.begin(), head_output.end(), 0.0f);
 
-                for (uint32_t t = 0; t < kv_cache->current_length; ++t)
+                for (uint32_t t = 0; t < current_length; ++t)
                 {
                     const uint32_t v_offset = t * num_heads * head_dim + head_offset;
 
                     for (uint32_t d = 0; d < head_dim; ++d)
                     {
-                        head_output[d] += attn_scores[t] * kv_cache->v_cache[v_offset + d];
+                        head_output[d] += attn_scores[t] * v_sequence[v_offset + d];
                     }
                 }
 
@@ -1004,10 +1054,9 @@ namespace ryzen_llm
 
         void bitnet::BitNetEngine::reset_cache()
         {
-            for (auto &cache : kv_caches_)
-            {
-                cache->reset();
-            }
+            // Reset the advanced KV cache manager
+            kv_cache_manager_->FreeSequence(0);                             // Free current sequence
+            kv_cache_manager_->AllocateSequence(0, config_.max_seq_length); // Reallocate
         }
 
     } // namespace bitnet

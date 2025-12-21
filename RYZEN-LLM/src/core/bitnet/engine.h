@@ -8,6 +8,8 @@
 #include "quantize.h"
 #include "kernels/matmul.h"
 #include "../tmac/lut_gemm.h"
+#include "../../optimization/memory/kv_cache.h"
+#include "../../optimization/speculative/speculative_decoder.h"
 #include <vector>
 #include <cstdint>
 #include <memory>
@@ -44,8 +46,12 @@ namespace ryzen_llm
             bool use_tmac;                // Default: true if available
             bool tmac_precompute_on_load; // Precompute tables when loading weights
 
+            // Speculative decoding (Phase 2 optimization)
+            bool use_speculative_decoding; // Enable speculative decoding
+            uint32_t speculative_k;        // Number of draft tokens to generate
+
             ModelConfig()
-                : vocab_size(32000), hidden_size(4096), intermediate_size(11008), num_layers(32), num_heads(32), head_dim(128), max_seq_length(2048), rms_norm_eps(1e-6f), quant_config(), use_tmac(true), tmac_precompute_on_load(true)
+                : vocab_size(32000), hidden_size(4096), intermediate_size(11008), num_layers(32), num_heads(32), head_dim(128), max_seq_length(2048), rms_norm_eps(1e-6f), quant_config(), use_tmac(true), tmac_precompute_on_load(true), use_speculative_decoding(false), speculative_k(4)
             {
             }
         };
@@ -209,7 +215,11 @@ namespace ryzen_llm
             std::unique_ptr<tmac::LookupTableGEMM> tmac_engine_;
 
             // KV Cache
-            std::vector<std::unique_ptr<KVCache>> kv_caches_; // One per layer
+            // Advanced KV Cache Manager (from optimization layer)
+            std::unique_ptr<memory::KVCacheManager> kv_cache_manager_;
+
+            // Speculative decoding (from optimization layer)
+            std::unique_ptr<speculative::SpeculativeDecoder> speculative_decoder_;
 
             // Intermediate buffers (preallocated)
             std::vector<float> hidden_states_;
