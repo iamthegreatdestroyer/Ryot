@@ -11,16 +11,171 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import warnings
 
-from ryzen_llm.ryzen_llm_bindings import (
-    QuantConfig as CppQuantConfig,
-    TernaryWeight,
-    QuantizedActivation,
-    quantize_weights_ternary as cpp_quantize_weights,
-    quantize_activations_int8 as cpp_quantize_activations,
-    dequantize_weights as cpp_dequantize_weights,
-    dequantize_activations as cpp_dequantize_activations,
-    compute_quantization_error as cpp_compute_error,
-)
+# Try to import C++ bindings, fall back to pure Python if not available
+_USE_CPP_BINDINGS = False
+_IMPORT_ERROR = None
+
+# First, check if bindings should even be attempted
+# (can be disabled via environment variable or if previous crashes detected)
+import os
+_SKIP_CPP_BINDINGS = os.environ.get('RYZEN_LLM_PURE_PYTHON', '0') == '1'
+
+if not _SKIP_CPP_BINDINGS:
+    try:
+        import sys
+        import platform
+        import subprocess
+        
+        # Check CPU features before attempting import
+        # AVX-512 instructions crash on CPUs that don't support them
+        def _check_cpu_avx512_support():
+            """Check if CPU supports AVX-512 instructions."""
+            try:
+                # On Windows, check using CPUID via platform module
+                if platform.system() == 'Windows':
+                    # Simple heuristic: check processor name for known AVX-512 CPUs
+                    proc = platform.processor()
+                    # Intel 10th gen+ Core and Xeon, AMD Zen 4+
+                    avx512_indicators = ['11th Gen', '12th Gen', '13th Gen', '14th Gen', 
+                                        'Xeon', 'Zen 4', '7000 Series', '9000 Series']
+                    return any(ind in proc for ind in avx512_indicators)
+                else:
+                    # On Linux, check /proc/cpuinfo
+                    try:
+                        with open('/proc/cpuinfo', 'r') as f:
+                            return 'avx512' in f.read().lower()
+                    except:
+                        return False
+            except:
+                return False
+        
+        _has_avx512 = _check_cpu_avx512_support()
+        if not _has_avx512:
+            warnings.warn(
+                "CPU may not support AVX-512. Skipping C++ bindings to prevent crash. "
+                "Set RYZEN_LLM_PURE_PYTHON=0 to force C++ bindings."
+            )
+            _SKIP_CPP_BINDINGS = True
+        
+        if not _SKIP_CPP_BINDINGS:
+            # Add build path for bindings
+            build_python_path = Path(__file__).parent.parent.parent / "build" / "python"
+            if build_python_path.exists():
+                sys.path.insert(0, str(build_python_path))
+            
+            from ryzen_llm.ryzen_llm_bindings import (
+                QuantConfig as CppQuantConfig,
+                TernaryWeight,
+                QuantizedActivation,
+                quantize_weights_ternary as cpp_quantize_weights,
+                quantize_activations_int8 as cpp_quantize_activations,
+                dequantize_weights as cpp_dequantize_weights,
+                dequantize_activations as cpp_dequantize_activations,
+                compute_quantization_error as cpp_compute_error,
+            )
+            _USE_CPP_BINDINGS = True
+    except (ImportError, OSError, Exception) as e:
+        _IMPORT_ERROR = str(e)
+        warnings.warn(
+            f"C++ bindings not available ({type(e).__name__}: {e}). "
+            "Using pure Python fallback (slower but functional)."
+        )
+
+if not _USE_CPP_BINDINGS:
+    @dataclass
+    class CppQuantConfig:
+        """Pure Python fallback for C++ QuantConfig."""
+        weight_group_size: int = 128
+        per_group_scaling: bool = True
+        activation_clip_value: float = 6.0
+        symmetric_activations: bool = True
+    
+    @dataclass
+    class TernaryWeight:
+        """Pure Python fallback for C++ TernaryWeight."""
+        data: np.ndarray  # ternary values (-1, 0, +1)
+        scales: np.ndarray  # per-group scales
+        rows: int
+        cols: int
+        
+        @property
+        def packed_data(self) -> bytes:
+            return self.data.tobytes()
+    
+    @dataclass
+    class QuantizedActivation:
+        """Pure Python fallback for C++ QuantizedActivation."""
+        data: np.ndarray  # int8 values
+        scale: float
+        zero_point: int
+        size: int
+        
+        @property
+        def packed_data(self) -> bytes:
+            return self.data.tobytes()
+    
+    def cpp_quantize_weights(weights: np.ndarray, rows: int, cols: int, config: CppQuantConfig) -> TernaryWeight:
+        """Pure Python ternary weight quantization."""
+        weights_2d = weights.reshape(rows, cols)
+        
+        group_size = config.weight_group_size
+        num_groups = max(1, cols // group_size)
+        
+        # Compute per-group scales
+        scales = np.zeros(num_groups, dtype=np.float32)
+        ternary = np.zeros_like(weights_2d, dtype=np.int8)
+        
+        for g in range(num_groups):
+            start = g * group_size
+            end = min(start + group_size, cols)
+            group = weights_2d[:, start:end]
+            
+            # Scale is max absolute value
+            scale = np.max(np.abs(group)) + 1e-10
+            scales[g] = scale
+            
+            # Quantize to ternary: round(x/scale) clamped to {-1, 0, 1}
+            normalized = group / scale
+            ternary[:, start:end] = np.clip(np.round(normalized), -1, 1).astype(np.int8)
+        
+        return TernaryWeight(data=ternary, scales=scales, rows=rows, cols=cols)
+    
+    def cpp_quantize_activations(activations: np.ndarray, config: CppQuantConfig) -> QuantizedActivation:
+        """Pure Python int8 activation quantization."""
+        clip_val = config.activation_clip_value
+        clipped = np.clip(activations, -clip_val, clip_val)
+        
+        scale = (2 * clip_val) / 255.0
+        zero_point = 128
+        
+        quantized = np.round(clipped / scale + zero_point).astype(np.int8)
+        
+        return QuantizedActivation(
+            data=quantized,
+            scale=float(scale),
+            zero_point=zero_point,
+            size=activations.size
+        )
+    
+    def cpp_dequantize_weights(ternary: TernaryWeight) -> np.ndarray:
+        """Pure Python ternary weight dequantization."""
+        weights = np.zeros((ternary.rows, ternary.cols), dtype=np.float32)
+        group_size = ternary.cols // len(ternary.scales) if len(ternary.scales) > 0 else ternary.cols
+        
+        for g, scale in enumerate(ternary.scales):
+            start = g * group_size
+            end = min(start + group_size, ternary.cols)
+            weights[:, start:end] = ternary.data[:, start:end].astype(np.float32) * scale
+        
+        return weights
+    
+    def cpp_dequantize_activations(quant: QuantizedActivation) -> np.ndarray:
+        """Pure Python int8 activation dequantization."""
+        return (quant.data.astype(np.float32) - quant.zero_point) * quant.scale
+    
+    def cpp_compute_error(original: np.ndarray, dequantized: np.ndarray) -> float:
+        """Compute quantization error (MSE)."""
+        return float(np.mean((original - dequantized) ** 2))
 
 
 # ============================================================================
