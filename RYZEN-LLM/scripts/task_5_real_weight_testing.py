@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Task 5: Real Weight Testing with BitNet 1.3B
+Task 5: Real Weight Testing with BitNet 1.58B
 
-This script downloads BitNet 1.3B from Hugging Face, loads it with the WeightLoader,
+This script downloads BitNet 1.58B from Hugging Face, loads it with the WeightLoader,
 applies QuantizationEngine quantization, and validates the quantized model through
 inference testing.
 
@@ -79,14 +79,14 @@ class BitNetWeightTester:
     6. Generate detailed report
     """
     
-    def __init__(self, model_name: str = "1bitLLM/bitnet_b1_58-3B"):
+    def __init__(self, model_name: str = "microsoft/bitnet-b1.58-2B-4T"):
         """
         Initialize tester.
         
         Args:
             model_name: Hugging Face model identifier
-                        Default: 1bitLLM/bitnet_b1_58-3B (publicly available)
-                        Alternative: microsoft/bitnet-b1.58-2B-4T (official Microsoft)
+                        Default: microsoft/bitnet-b1.58-2B-4T (official Microsoft BitNet)
+                        Alternative: 1bitLLM/bitnet_b1_58-3B (if available)
         """
         self.model_name = model_name
         self.model_url = f"https://huggingface.co/{model_name}"
@@ -164,12 +164,7 @@ class BitNetWeightTester:
         start = time.perf_counter()
         
         # Load without quantization first to get baseline
-        config = WeightLoaderConfig(
-            quantize=False,  # Load original first
-            device="cpu",
-            dtype=np.float32
-        )
-        loader = load_weights(weights_path, config=config)
+        loader, _ = load_weights(weights_path, quantize=False, device="cpu")
         
         load_time = (time.perf_counter() - start) * 1000
         print(f"✅ Loaded in {load_time:.2f}ms")
