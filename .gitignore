@@ -6,6 +6,17 @@ temp_ci_b64.txt
 update_payload.json
 # Local test/build artifacts
 RYZEN-LLM/test_build/
+# Model weights and storage (large files)
+RYZEN-LLM/storage/
+storage/
+*.safetensors
+*.bin
+*.pth
+*.pt
+*.h5
+*.hdf5
+*.onnx
+*.pb
 # Editor backups
 *~
 *.swp
