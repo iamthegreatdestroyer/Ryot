@@ -122,7 +122,7 @@ class DistributedAPIServer:
 
         # FastAPI app with lifespan for proper async initialization
         self.app = FastAPI(
-            title="RYZEN-LLM Distributed API",
+            title="Ryzanstein LLM Distributed API",
             description="Distributed LLM inference across multiple GPUs",
             version="3.0.0",
             lifespan=self._create_lifespan()
