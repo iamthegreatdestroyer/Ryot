@@ -27,7 +27,7 @@ from .kv_cache_compression import (
     Int4Quantizer,
     MixedPrecisionQuantizer,
     QuantizedKVCacheManager,
-    create_compressed_kv_cache,
+    create_quantized_kv_cache,
 )
 
 # Sprint 2.2 Day 6: Adaptive Cache Sizing
@@ -41,7 +41,7 @@ from .adaptive_cache_manager import (
     MemoryMonitor,
     WorkloadAnalyzer,
     AdaptiveCacheSizer,
-    create_adaptive_cache_sizer,
+    create_adaptive_sizer,
 )
 
 # Sprint 2.2 Day 7: Distributed Cache Optimization
@@ -90,7 +90,7 @@ __all__ = [
     "Int4Quantizer",
     "MixedPrecisionQuantizer",
     "QuantizedKVCacheManager",
-    "create_compressed_kv_cache",
+    "create_quantized_kv_cache",
     # Day 6: Adaptive Sizing
     "MemoryPressureLevel",
     "CacheTier",
@@ -101,7 +101,7 @@ __all__ = [
     "MemoryMonitor",
     "WorkloadAnalyzer",
     "AdaptiveCacheSizer",
-    "create_adaptive_cache_sizer",
+    "create_adaptive_sizer",
     # Day 7: Distributed Optimization
     "NodeState",
     "MigrationState",
