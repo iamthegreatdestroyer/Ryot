@@ -28,6 +28,13 @@ try:
 except ImportError:
     SAFETENSORS_AVAILABLE = False
 
+# Try importing torch for bfloat16 handling
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
 from .quantization import (
     QuantizationEngine,
     QuantizationConfig,
@@ -189,15 +196,27 @@ class WeightLoader:
         
         # Load weights using safetensors library
         weights = {}
-        with safe_open(str(file_path), framework="numpy") as f:
+        with safe_open(str(file_path), framework="pt") as f:  # Use PyTorch framework to handle bfloat16
             for key in f.keys():
                 # Apply layer filter if specified
                 if layer_filter and not any(layer in key for layer in layer_filter):
                     continue
                 
-                # Load weight as numpy array
-                weight = f.get_tensor(key)
-                weights[key] = weight.astype(self.config.dtype)
+                # Load weight as PyTorch tensor first (handles bfloat16)
+                weight_pt = f.get_tensor(key)
+                
+                # Convert to numpy, handling bfloat16
+                if weight_pt.dtype == torch.bfloat16:
+                    weight_pt = weight_pt.float()  # Convert bfloat16 to float32
+                
+                # Convert to numpy
+                weight = weight_pt.numpy()
+                
+                # Ensure correct dtype
+                if weight.dtype != self.config.dtype:
+                    weight = weight.astype(self.config.dtype)
+                
+                weights[key] = weight
         
         # Apply quantization if enabled
         if quantize and self.quantizer:

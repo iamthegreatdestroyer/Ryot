@@ -27,6 +27,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 import threading
+import concurrent.futures
 
 logger = logging.getLogger(__name__)
 
@@ -130,18 +131,28 @@ class BatchEngine:
             "efficiency_ratio": 0.0
         }
 
-        # Threading
-        self.lock = threading.Lock()
+        # Threading - Fine-grained locks per GPU
+        self.gpu_locks: Dict[int, threading.RLock] = {}  # Reentrant locks per GPU
+        self.global_lock = threading.RLock()  # For global operations only
         self._shutdown_event = threading.Event()
 
+        # Atomic counters for statistics (protected by stats_lock)
+        self.stats_lock = threading.RLock()
+        self._total_requests = 0
+        self._batches_processed = 0
+
     def initialize_gpu_queues(self, gpu_ids: List[int]):
-        """Initialize request queues for GPUs."""
-        for gpu_id in gpu_ids:
-            self.request_queues[gpu_id] = deque()
-            self.active_batches[gpu_id] = Batch(
-                batch_id=f"batch_{gpu_id}_{int(time.time())}",
-                gpu_id=gpu_id
-            )
+        """Initialize request queues for GPUs with fine-grained locking."""
+        with self.global_lock:
+            for gpu_id in gpu_ids:
+                if gpu_id not in self.request_queues:
+                    self.request_queues[gpu_id] = deque()
+                    self.active_batches[gpu_id] = Batch(
+                        batch_id=f"batch_{gpu_id}_{int(time.time())}",
+                        gpu_id=gpu_id
+                    )
+                    # Create per-GPU reentrant lock
+                    self.gpu_locks[gpu_id] = threading.RLock()
 
     async def submit_request(
         self,
@@ -171,13 +182,16 @@ class BatchEngine:
             future=future
         )
 
-        with self.lock:
+        with self.gpu_locks[gpu_id]:
             if gpu_id not in self.request_queues:
                 self.initialize_gpu_queues([gpu_id])
 
             # Add to appropriate queue based on priority
             self._enqueue_request(batched_request)
-            self.stats["total_requests"] += 1
+
+        # Thread-safe statistics increment
+        with self.stats_lock:
+            self._total_requests += 1
 
         # Try to form batches immediately
         await self._try_form_batches()
@@ -199,10 +213,24 @@ class BatchEngine:
         queue.insert(insert_pos, request)
 
     async def _try_form_batches(self):
-        """Try to form new batches from queued requests."""
-        for gpu_id, queue in self.request_queues.items():
+        """Try to form new batches from queued requests with fine-grained locking."""
+        # Process each GPU independently to avoid global lock contention
+        tasks = []
+        for gpu_id in self.request_queues.keys():
+            # Create task for each GPU to process its queue concurrently
+            task = asyncio.create_task(self._try_form_batch_for_gpu(gpu_id))
+            tasks.append(task)
+
+        # Wait for all GPU batch formation tasks to complete
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _try_form_batch_for_gpu(self, gpu_id: int):
+        """Try to form batches for a specific GPU."""
+        with self.gpu_locks[gpu_id]:
+            queue = self.request_queues[gpu_id]
             if not queue:
-                continue
+                return
 
             batch = self.active_batches[gpu_id]
 
@@ -213,9 +241,15 @@ class BatchEngine:
 
             # Process batch if ready
             if batch.should_process(self.max_batch_size, self.max_latency_ms):
-                await self._process_batch(batch)
+                # Release lock before async processing
+                pass
 
-                # Create new batch for this GPU
+        # Process batch outside of lock to avoid holding it during I/O
+        if batch.should_process(self.max_batch_size, self.max_latency_ms):
+            await self._process_batch(batch)
+
+            # Create new batch for this GPU (with lock)
+            with self.gpu_locks[gpu_id]:
                 self.active_batches[gpu_id] = Batch(
                     batch_id=f"batch_{gpu_id}_{int(time.time())}",
                     gpu_id=gpu_id
@@ -261,58 +295,85 @@ class BatchEngine:
                 request.future.set_result(response)
 
     def _update_batch_stats(self, batch: Batch, processing_time: float):
-        """Update batch processing statistics."""
-        self.stats["batches_processed"] += 1
+        """Update batch processing statistics with thread-safe operations."""
+        with self.stats_lock:
+            self._batches_processed += 1
 
-        # Update average batch size
-        current_avg = self.stats["avg_batch_size"]
-        total_batches = self.stats["batches_processed"]
-        self.stats["avg_batch_size"] = \
-            (current_avg * (total_batches - 1) + batch.get_batch_size()) / total_batches
+            # Update average batch size
+            current_avg = self.stats["avg_batch_size"]
+            total_batches = self._batches_processed
+            self.stats["avg_batch_size"] = \
+                (current_avg * (total_batches - 1) + batch.get_batch_size()) / total_batches
 
-        # Update average latency
-        current_latency = self.stats["avg_latency_ms"]
-        self.stats["avg_latency_ms"] = \
-            (current_latency * (total_batches - 1) + processing_time) / total_batches
+            # Update average latency
+            current_latency = self.stats["avg_latency_ms"]
+            self.stats["avg_latency_ms"] = \
+                (current_latency * (total_batches - 1) + processing_time) / total_batches
 
-        # Calculate efficiency ratio (actual batch size / max batch size)
-        efficiency = batch.get_batch_size() / self.max_batch_size
-        current_efficiency = self.stats["efficiency_ratio"]
-        self.stats["efficiency_ratio"] = \
-            (current_efficiency * (total_batches - 1) + efficiency) / total_batches
+            # Calculate efficiency ratio (actual batch size / max batch size)
+            efficiency = batch.get_batch_size() / self.max_batch_size
+            current_efficiency = self.stats["efficiency_ratio"]
+            self.stats["efficiency_ratio"] = \
+                (current_efficiency * (total_batches - 1) + efficiency) / total_batches
 
     def get_batch_stats(self) -> Dict[str, Any]:
-        """Get batch processing statistics."""
-        return {
-            **self.stats,
-            "active_batches": len([b for b in self.active_batches.values() if b.requests]),
-            "queued_requests": sum(len(queue) for queue in self.request_queues.values())
-        }
+        """Get batch processing statistics with thread-safe access."""
+        with self.stats_lock:
+            stats_copy = self.stats.copy()
+            stats_copy["total_requests"] = self._total_requests
+            stats_copy["batches_processed"] = self._batches_processed
+
+        # Count active batches and queued requests (requires GPU locks)
+        active_batches = 0
+        queued_requests = 0
+
+        for gpu_id in self.request_queues.keys():
+            with self.gpu_locks[gpu_id]:
+                batch = self.active_batches[gpu_id]
+                if batch.requests:
+                    active_batches += 1
+                queued_requests += len(self.request_queues[gpu_id])
+
+        stats_copy["active_batches"] = active_batches
+        stats_copy["queued_requests"] = queued_requests
+
+        return stats_copy
 
     def get_gpu_queue_status(self, gpu_id: int) -> Dict[str, Any]:
-        """Get queue status for a specific GPU."""
+        """Get queue status for a specific GPU with fine-grained locking."""
         if gpu_id not in self.request_queues:
             return {"error": f"GPU {gpu_id} not initialized"}
 
-        queue = self.request_queues[gpu_id]
-        batch = self.active_batches[gpu_id]
+        with self.gpu_locks[gpu_id]:
+            queue = self.request_queues[gpu_id]
+            batch = self.active_batches[gpu_id]
 
-        return {
-            "gpu_id": gpu_id,
-            "queued_requests": len(queue),
-            "active_batch_size": batch.get_batch_size(),
-            "active_batch_memory": batch.get_memory_estimate(),
-            "oldest_request_age": time.time() - min((r.timestamp for r in queue), default=time.time())
-        }
+            return {
+                "gpu_id": gpu_id,
+                "queued_requests": len(queue),
+                "active_batch_size": batch.get_batch_size(),
+                "active_batch_memory": batch.get_memory_estimate(),
+                "oldest_request_age": time.time() - min((r.timestamp for r in queue), default=time.time())
+            }
 
     async def flush_all_batches(self):
-        """Force processing of all pending batches."""
+        """Force processing of all pending batches with fine-grained locking."""
         logger.info("Flushing all pending batches...")
 
-        for gpu_id, batch in self.active_batches.items():
-            if batch.requests:
-                await self._process_batch(batch)
-                # Create new empty batch
+        # Collect batches to flush (with locks)
+        batches_to_flush = []
+        for gpu_id in self.request_queues.keys():
+            with self.gpu_locks[gpu_id]:
+                batch = self.active_batches[gpu_id]
+                if batch.requests:
+                    batches_to_flush.append((gpu_id, batch))
+
+        # Process batches outside of locks
+        for gpu_id, batch in batches_to_flush:
+            await self._process_batch(batch)
+
+            # Create new empty batch (with lock)
+            with self.gpu_locks[gpu_id]:
                 self.active_batches[gpu_id] = Batch(
                     batch_id=f"batch_{gpu_id}_{int(time.time())}",
                     gpu_id=gpu_id

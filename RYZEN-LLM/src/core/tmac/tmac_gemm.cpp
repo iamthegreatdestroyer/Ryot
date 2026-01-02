@@ -220,15 +220,13 @@ namespace ryzanstein_llm
                     for (uint32_t i = 0; i < 16; ++i)
                     {
                         // Load 16 activations (one per column)
-                        __m256i activations_lo = _mm256_set_epi8(
-                            X[(n + 15) * K + g * 16 + i], X[(n + 14) * K + g * 16 + i],
-                            X[(n + 13) * K + g * 16 + i], X[(n + 12) * K + g * 16 + i],
-                            X[(n + 11) * K + g * 16 + i], X[(n + 10) * K + g * 16 + i],
-                            X[(n + 9) * K + g * 16 + i], X[(n + 8) * K + g * 16 + i],
-                            X[(n + 7) * K + g * 16 + i], X[(n + 6) * K + g * 16 + i],
-                            X[(n + 5) * K + g * 16 + i], X[(n + 4) * K + g * 16 + i],
-                            X[(n + 3) * K + g * 16 + i], X[(n + 2) * K + g * 16 + i],
-                            X[(n + 1) * K + g * 16 + i], X[(n + 0) * K + g * 16 + i]);
+                        int8_t acts_bytes[16];
+                        for (int j = 0; j < 16; ++j)
+                        {
+                            acts_bytes[j] = X[(n + j) * K + g * 16 + i];
+                        }
+                        __m128i acts_128 = _mm_loadu_si128((__m128i *)acts_bytes);
+                        __m256i activations_lo = _mm256_cvtepi8_epi32(acts_128);
 
                         // Lookup results (scalar for now - can be vectorized)
                         int32_t results[16];

@@ -111,12 +111,18 @@ class BitNetWeightTester:
         """
         try:
             from huggingface_hub import hf_hub_download
-        except ImportError:
-            print("ERROR: huggingface_hub required for downloading")
-            print("Install with: pip install huggingface_hub")
+            import requests
+            import certifi
+        except ImportError as e:
+            print(f"ERROR: Required libraries not available: {e}")
+            print("Install with: pip install huggingface_hub requests certifi")
             raise
         
+        # Fix SSL certificate issue on Windows
+        os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+        
         print(f"📥 Downloading {self.model_name} from Hugging Face...")
+        print(f"Using CA bundle: {certifi.where()}")
         
         # Try downloading in SafeTensors format (preferred)
         try:
@@ -264,7 +270,7 @@ class BitNetWeightTester:
         
         # Estimate quantized size (ternary: ~1 bit per weight + overhead)
         quantized_size = 0
-        for ternary in self.quantized_weights.values():
+        for name, ternary in self.quantized_weights.items():
             # Ternary weights are packed (rough estimate)
             if hasattr(ternary, 'nbytes'):
                 quantized_size += ternary.nbytes
@@ -291,7 +297,16 @@ class BitNetWeightTester:
             
             # Get shapes
             orig_shape = orig.shape if isinstance(orig, np.ndarray) else orig.shape
-            quant_shape = quant.shape if isinstance(quant, np.ndarray) else quant.shape
+            
+            # Handle different quantized weight types
+            if isinstance(quant, np.ndarray):
+                quant_shape = quant.shape
+            elif hasattr(quant, 'rows') and hasattr(quant, 'cols'):
+                # TernaryWeight object
+                quant_shape = (quant.rows, quant.cols)
+            else:
+                # Fallback
+                quant_shape = getattr(quant, 'shape', 'unknown')
             
             if orig_shape != quant_shape:
                 print(f"  ⚠️  Shape mismatch in {name}: {orig_shape} vs {quant_shape}")
