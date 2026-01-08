@@ -18,12 +18,16 @@ target_include_directories(ryzen_llm_bitnet PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../tmac
 )
 
-# Link with T-MAC library and OpenMP
+# Link with T-MAC library and OpenMP (if available)
 target_link_libraries(ryzen_llm_bitnet PUBLIC
     ryzen_llm_tmac
     ryzen_llm_optimization
-    OpenMP::OpenMP_CXX
 )
+
+# Link OpenMP if available
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(ryzen_llm_bitnet PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # C++17 standard
 set_target_properties(ryzen_llm_bitnet PROPERTIES

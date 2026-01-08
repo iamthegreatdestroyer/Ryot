@@ -25,9 +25,12 @@ target_include_directories(ryzen_llm_tmac PUBLIC
 )
 
 # Link dependencies
-target_link_libraries(ryzen_llm_tmac PUBLIC
-    OpenMP::OpenMP_CXX
-)
+target_link_libraries(ryzen_llm_tmac PUBLIC)
+
+# Link OpenMP if available
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(ryzen_llm_tmac PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # Enable AVX-512 for T-MAC (vectorized table lookups)
 # Disabled for compatibility - Ryzanstein 7 7730U doesn't support AVX-512

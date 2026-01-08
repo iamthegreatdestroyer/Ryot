@@ -3,7 +3,7 @@
 # Requires CMake 3.20+ for C++17 support
 
 cmake_minimum_required(VERSION 3.20)
-project(Ryzanstein LLM VERSION 2.0.0 LANGUAGES CXX)
+project("Ryzanstein LLM" VERSION 2.0.0 LANGUAGES CXX)
 
 # C++17 Standard
 set(CMAKE_CXX_STANDARD 17)
@@ -23,17 +23,32 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /wd4100")  # Disable C4100 (unreferenced parameter)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2 /arch:AVX2")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od")
-    
-    # Enable OpenMP on MSVC
-    find_package(OpenMP REQUIRED)
+
+    # Enable OpenMP on MSVC (optional)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP found - enabling parallel processing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    else()
+        message(WARNING "OpenMP not found - building without parallel processing")
+    endif()
 else()
     # GCC/Clang flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fexceptions")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mtune=native -fopenmp")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fopenmp")
-    
-    # Enable OpenMP on GCC/Clang
-    find_package(OpenMP REQUIRED)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mtune=native")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+
+    # Enable OpenMP on GCC/Clang (optional)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP found - enabling parallel processing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS}")
+    else()
+        message(WARNING "OpenMP not found - building without parallel processing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+    endif()
 endif()
 
 # AVX-512 Detection and Flags
