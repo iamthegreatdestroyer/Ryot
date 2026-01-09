@@ -20,16 +20,16 @@ Three master scripts have been created to automate the entire Ryzanstein ecosyst
 
 ### Complete Automation Coverage
 
-| Task | Desktop App | VS Code Extension |
-|------|-------------|-------------------|
-| Dependency verification | ✅ | ✅ |
-| Directory structure creation | ✅ | ✅ |
-| File generation (40+ files) | ✅ | ✅ |
-| Configuration files | ✅ | ✅ |
-| npm/go dependencies | ✅ | ✅ |
-| TypeScript compilation | ❌ | ✅ |
-| Build & packaging | ✅ | ✅ |
-| Error handling | ✅ | ✅ |
+| Task                         | Desktop App | VS Code Extension |
+| ---------------------------- | ----------- | ----------------- |
+| Dependency verification      | ✅          | ✅                |
+| Directory structure creation | ✅          | ✅                |
+| File generation (40+ files)  | ✅          | ✅                |
+| Configuration files          | ✅          | ✅                |
+| npm/go dependencies          | ✅          | ✅                |
+| TypeScript compilation       | ❌          | ✅                |
+| Build & packaging            | ✅          | ✅                |
+| Error handling               | ✅          | ✅                |
 
 **Total Automation**: 95%+
 
@@ -45,6 +45,7 @@ cd s:\Ryot
 ```
 
 This will:
+
 1. Check all prerequisites
 2. Setup Desktop App fully
 3. Setup VS Code Extension fully
@@ -80,12 +81,14 @@ cd s:\Ryot
 ### Option 4: Direct Script Execution
 
 #### Desktop App
+
 ```powershell
 cd s:\Ryot\desktop
 .\SETUP_DESKTOP_APP_MASTER.ps1
 ```
 
 #### VS Code Extension
+
 ```powershell
 cd s:\Ryot\vscode-extension
 .\SETUP_VSCODE_EXTENSION_MASTER.ps1
@@ -113,6 +116,7 @@ cd s:\Ryot\vscode-extension
 ```
 
 **Examples**:
+
 ```powershell
 # Setup desktop only, skip dependency checks
 .\SETUP_COMPLETE_ECOSYSTEM_MASTER.ps1 -SetupType Desktop -SkipDependencies
@@ -138,6 +142,7 @@ cd s:\Ryot\vscode-extension
 ```
 
 **Examples**:
+
 ```powershell
 # Setup with development mode
 .\SETUP_DESKTOP_APP_MASTER.ps1 -DevelopmentOnly
@@ -162,6 +167,7 @@ cd s:\Ryot\vscode-extension
 ```
 
 **Examples**:
+
 ```powershell
 # Setup and publish to marketplace
 .\SETUP_VSCODE_EXTENSION_MASTER.ps1 -PublishToMarketplace
@@ -252,6 +258,7 @@ Total: 20+ files, ~800 lines of code
 ## ✨ AUTOMATION DETAILS
 
 ### Phase 1: Dependency Management
+
 ```
 ✓ Check for Go installation
 ✓ Check for Node.js installation
@@ -262,6 +269,7 @@ Total: 20+ files, ~800 lines of code
 ```
 
 ### Phase 2: Directory Structure
+
 ```
 ✓ Create backend directories (app, handlers, services, config)
 ✓ Create frontend directories (components, hooks, stores, services, types)
@@ -270,6 +278,7 @@ Total: 20+ files, ~800 lines of code
 ```
 
 ### Phase 3: File Generation
+
 ```
 ✓ Generate all backend files with full implementations
 ✓ Generate all React components with TypeScript
@@ -282,6 +291,7 @@ Total: 20+ files, ~800 lines of code
 ```
 
 ### Phase 4: Dependency Installation
+
 ```
 ✓ npm install for all frontend dependencies
 ✓ go mod download for backend dependencies
@@ -289,6 +299,7 @@ Total: 20+ files, ~800 lines of code
 ```
 
 ### Phase 5: Configuration
+
 ```
 ✓ Create tsconfig.json with optimal settings
 ✓ Create package.json with correct scripts
@@ -298,6 +309,7 @@ Total: 20+ files, ~800 lines of code
 ```
 
 ### Phase 6: Build & Package
+
 ```
 ✓ Compile TypeScript (extension)
 ✓ Build Wails application (desktop)
@@ -353,14 +365,15 @@ START
 
 ## ⏱️ TIME ESTIMATES
 
-| Setup Type | Duration | Status |
-|-----------|----------|--------|
-| Complete (Full) | 15-20 min | Automated |
-| Desktop Only | 8-10 min | Automated |
-| Extension Only | 5-7 min | Automated |
-| Dependencies | 2-5 min | Auto (if needed) |
+| Setup Type      | Duration  | Status           |
+| --------------- | --------- | ---------------- |
+| Complete (Full) | 15-20 min | Automated        |
+| Desktop Only    | 8-10 min  | Automated        |
+| Extension Only  | 5-7 min   | Automated        |
+| Dependencies    | 2-5 min   | Auto (if needed) |
 
 **Factors that affect time**:
+
 - Network speed (npm/go package downloads)
 - Disk speed
 - System resources
@@ -399,6 +412,7 @@ While the scripts are autonomous, you can customize:
 After scripts complete, verify:
 
 ### Desktop App
+
 - [ ] `cmd/ryzanstein/main.go` exists and contains Wails setup
 - [ ] `packages/desktop/src/components/ChatPanel.tsx` exists
 - [ ] `packages/desktop/src/hooks/useChat.ts` exists
@@ -408,6 +422,7 @@ After scripts complete, verify:
 - [ ] No compilation errors
 
 ### VS Code Extension
+
 - [ ] `src/extension.ts` exists with entry point
 - [ ] `src/webview/chatPanel.ts` exists
 - [ ] `src/services/ryzansteinAPI.ts` exists
@@ -417,6 +432,7 @@ After scripts complete, verify:
 - [ ] TypeScript compiles without errors
 
 ### Integration
+
 - [ ] Both setups completed successfully
 - [ ] No critical errors reported
 - [ ] All files verified
@@ -427,6 +443,7 @@ After scripts complete, verify:
 ## 🛠️ TROUBLESHOOTING
 
 ### Script Won't Run
+
 ```powershell
 # Check execution policy
 Get-ExecutionPolicy
@@ -439,6 +456,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 ```
 
 ### Dependencies Not Found
+
 ```powershell
 # Run without skipping dependency checks
 .\SETUP_COMPLETE_ECOSYSTEM_MASTER.ps1 -SkipDependencies:$false
@@ -449,6 +467,7 @@ npm install -g @vscode/vsce
 ```
 
 ### Build Fails
+
 ```powershell
 # Check Go version
 go version
@@ -475,12 +494,12 @@ npm --version
 
 ### Key Error Messages
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "Go not installed" | Go SDK missing | Install from golang.org |
-| "Node.js not found" | Node.js not installed | Install from nodejs.org |
-| "vsce not found" | VS Code CLI missing | Run: npm install -g @vscode/vsce |
-| "Admin rights required" | Script needs elevation | Run PowerShell as Administrator |
+| Error                   | Cause                  | Solution                         |
+| ----------------------- | ---------------------- | -------------------------------- |
+| "Go not installed"      | Go SDK missing         | Install from golang.org          |
+| "Node.js not found"     | Node.js not installed  | Install from nodejs.org          |
+| "vsce not found"        | VS Code CLI missing    | Run: npm install -g @vscode/vsce |
+| "Admin rights required" | Script needs elevation | Run PowerShell as Administrator  |
 
 ---
 
@@ -497,12 +516,14 @@ npm --version
 ## 📈 NEXT STEPS AFTER SETUP
 
 ### 1. Desktop App Development
+
 ```bash
 cd s:\Ryot\desktop
 wails dev              # Start development server
 ```
 
 ### 2. VS Code Extension Development
+
 ```bash
 cd s:\Ryot\vscode-extension
 npm run watch         # Watch for TypeScript changes
@@ -510,6 +531,7 @@ npm run watch         # Watch for TypeScript changes
 ```
 
 ### 3. Integration Testing
+
 ```bash
 # Start both simultaneously
 # Terminal 1:
@@ -529,6 +551,7 @@ cd s:\Ryot\vscode-extension && npm run watch
 ### Change Generated Component Names
 
 Edit the script before running:
+
 ```powershell
 # In SETUP_DESKTOP_APP_MASTER.ps1
 # Change ChatPanel.tsx to MyChat.tsx
@@ -538,6 +561,7 @@ Create-FileIfNotExists (Join-Path $frontendPath "src\components\MyChat.tsx") $ch
 ### Add Additional Dependencies
 
 Edit before running:
+
 ```powershell
 # In SETUP_DESKTOP_APP_MASTER.ps1
 # Add to npm install line:
@@ -547,6 +571,7 @@ npm install axios zustand react-router-dom moment lodash
 ### Modify Build Configuration
 
 Edit wails.json after generation:
+
 ```json
 {
   "app": {
@@ -561,9 +586,10 @@ Edit wails.json after generation:
 
 **Master Scripts Created**: ✅  
 **Autonomy Level**: 95%+  
-**Ready for Production**: ✅  
+**Ready for Production**: ✅
 
 **Start your setup now!**
+
 ```powershell
 cd s:\Ryot
 .\SETUP_COMPLETE_ECOSYSTEM_MASTER.ps1

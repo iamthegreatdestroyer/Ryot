@@ -33,12 +33,12 @@ $desktopPath = Join-Path $projectRoot "desktop"
 $extensionPath = Join-Path $projectRoot "vscode-extension"
 
 $colors = @{
-    Success = "Green"
-    Warning = "Yellow"
-    Error = "Red"
-    Info = "Cyan"
+    Success  = "Green"
+    Warning  = "Yellow"
+    Error    = "Red"
+    Info     = "Cyan"
     Progress = "Magenta"
-    Header = "DarkCyan"
+    Header   = "DarkCyan"
 }
 
 $startTime = Get-Date
@@ -100,7 +100,7 @@ function Perform-PreflightChecks {
     Write-Progress "Verifying system requirements..."
     
     $checks = @{
-        "PowerShell 5.0+" = { $PSVersionTable.PSVersion.Major -ge 5 }
+        "PowerShell 5.0+"      = { $PSVersionTable.PSVersion.Major -ge 5 }
         "Administrator Rights" = { ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") }
     }
     
@@ -108,7 +108,8 @@ function Perform-PreflightChecks {
     foreach ($check in $checks.GetEnumerator()) {
         if (& $check.Value) {
             Write-Success $check.Name
-        } else {
+        }
+        else {
             Write-Error $check.Name
             $allGood = $false
         }
@@ -145,17 +146,19 @@ function Setup-DesktopApp {
     
     $params = @{
         SkipDependencies = $SkipDependencies
-        DevelopmentOnly = $true
+        DevelopmentOnly  = $true
     }
     
     Push-Location $desktopPath
     try {
         & $setupScript @params
         Write-Success "Desktop app setup completed"
-    } catch {
+    }
+    catch {
         Write-Error "Desktop app setup failed: $_"
         throw
-    } finally {
+    }
+    finally {
         Pop-Location
     }
     
@@ -186,17 +189,19 @@ function Setup-VSCodeExtension {
     
     $params = @{
         SkipDependencies = $SkipDependencies
-        PackageOnly = $false
+        PackageOnly      = $false
     }
     
     Push-Location $extensionPath
     try {
         & $setupScript @params
         Write-Success "VS Code extension setup completed"
-    } catch {
+    }
+    catch {
         Write-Error "VS Code extension setup failed: $_"
         throw
-    } finally {
+    }
+    finally {
         Pop-Location
     }
     
@@ -223,7 +228,8 @@ function Verify-Integration {
     
     if ($desktopChecks -contains $false) {
         Write-Warning "Some desktop app files are missing"
-    } else {
+    }
+    else {
         Write-Success "Desktop app files verified"
     }
     
@@ -239,7 +245,8 @@ function Verify-Integration {
     
     if ($extensionChecks -contains $false) {
         Write-Warning "Some extension files are missing"
-    } else {
+    }
+    else {
         Write-Success "VS Code extension files verified"
     }
     
@@ -340,7 +347,8 @@ function Main {
             }
         }
         
-    } catch {
+    }
+    catch {
         Write-Error "Setup failed: $_"
         Write-Host ""
         Write-Host "Troubleshooting:" -ForegroundColor $colors.Warning

@@ -35,10 +35,10 @@ $backendPath = Join-Path $projectRoot "cmd\ryzanstein"
 $internalPath = Join-Path $projectRoot "internal"
 
 $colors = @{
-    Success = "Green"
-    Warning = "Yellow"
-    Error = "Red"
-    Info = "Cyan"
+    Success  = "Green"
+    Warning  = "Yellow"
+    Error    = "Red"
+    Info     = "Cyan"
     Progress = "Magenta"
 }
 
@@ -116,7 +116,8 @@ function Verify-Dependencies {
     if (Test-CommandExists "go") {
         $goVersion = (go version).Split()[2]
         Write-Success "Go installed: $goVersion"
-    } else {
+    }
+    else {
         Write-Error "Go not installed. Download from https://golang.org"
         $allGood = $false
     }
@@ -125,7 +126,8 @@ function Verify-Dependencies {
     if (Test-CommandExists "node") {
         $nodeVersion = (node --version)
         Write-Success "Node.js installed: $nodeVersion"
-    } else {
+    }
+    else {
         Write-Error "Node.js not installed. Download from https://nodejs.org"
         $allGood = $false
     }
@@ -134,11 +136,13 @@ function Verify-Dependencies {
     if (Test-CommandExists "wails") {
         $wailsVersion = (wails version)
         Write-Success "Wails installed: $wailsVersion"
-    } else {
+    }
+    else {
         if ($SkipDependencies) {
             Write-Warning "Wails not installed. Run: go install github.com/wailsapp/wails/v3/cmd/wails@latest"
             $allGood = $false
-        } else {
+        }
+        else {
             Write-Step "Installing Wails..."
             go install github.com/wailsapp/wails/v3/cmd/wails@latest
             Write-Success "Wails installed"
@@ -606,7 +610,8 @@ function Setup-NPM {
         npm install axios zustand react-router-dom --save
         npm install -D @types/react @types/react-dom typescript --save-dev
         Write-Success "NPM dependencies installed"
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -622,24 +627,24 @@ function Setup-PackageJson {
     
     if (-not (Test-Path $packageJsonPath)) {
         $packageJson = @{
-            name = "ryzanstein-desktop"
-            version = "1.0.0"
-            type = "module"
-            scripts = @{
-                dev = "vite"
-                build = "tsc && vite build"
+            name            = "ryzanstein-desktop"
+            version         = "1.0.0"
+            type            = "module"
+            scripts         = @{
+                dev     = "vite"
+                build   = "tsc && vite build"
                 preview = "vite preview"
             }
-            dependencies = @{
-                react = "^18.0.0"
+            dependencies    = @{
+                react       = "^18.0.0"
                 "react-dom" = "^18.0.0"
-                axios = "^1.6.0"
-                zustand = "^4.4.0"
+                axios       = "^1.6.0"
+                zustand     = "^4.4.0"
             }
             devDependencies = @{
-                typescript = "^5.0.0"
-                vite = "^5.0.0"
-                "@types/react" = "^18.0.0"
+                typescript         = "^5.0.0"
+                vite               = "^5.0.0"
+                "@types/react"     = "^18.0.0"
                 "@types/react-dom" = "^18.0.0"
             }
         } | ConvertTo-Json
@@ -664,10 +669,12 @@ function Setup-GoMod {
             go mod init github.com/iamthegreatdestroyer/ryzanstein
             go get github.com/wailsapp/wails/v3@latest
             Write-Success "Go module initialized"
-        } finally {
+        }
+        finally {
             Pop-Location
         }
-    } else {
+    }
+    else {
         Write-Success "go.mod already exists"
     }
 }
@@ -683,35 +690,36 @@ function Setup-WailsConfig {
     
     if (-not (Test-Path $wailsJsonPath)) {
         $wailsJson = @{
-            name = "Ryzanstein"
-            type = "desktop"
+            name       = "Ryzanstein"
+            type       = "desktop"
             outputType = "desktop"
-            frontend = "packages/desktop"
-            build = @{
-                appType = "desktop"
+            frontend   = "packages/desktop"
+            build      = @{
+                appType  = "desktop"
                 frontend = @{
-                    dir = "packages/desktop"
+                    dir     = "packages/desktop"
                     install = "npm install"
-                    build = "npm run build"
-                    dev = "npm run dev"
+                    build   = "npm run build"
+                    dev     = "npm run dev"
                 }
-                backend = @{
+                backend  = @{
                     main = "cmd/ryzanstein/main.go"
                 }
             }
-            app = @{
-                title = "Ryzanstein"
-                width = 1400
-                height = 900
-                minWidth = 800
+            app        = @{
+                title     = "Ryzanstein"
+                width     = 1400
+                height    = 900
+                minWidth  = 800
                 minHeight = 600
-                menu = "AppMenu"
+                menu      = "AppMenu"
             }
         } | ConvertTo-Json -Depth 10
         
         Set-Content -Path $wailsJsonPath -Value $wailsJson -Encoding UTF8
         Write-Success "Created wails.json"
-    } else {
+    }
+    else {
         Write-Success "wails.json already exists"
     }
 }
@@ -728,16 +736,19 @@ function Build-Application {
         Push-Location $projectRoot
         try {
             wails dev
-        } finally {
+        }
+        finally {
             Pop-Location
         }
-    } else {
+    }
+    else {
         Write-Step "Building for production..."
         Push-Location $projectRoot
         try {
             wails build -nsis
             Write-Success "Build completed successfully"
-        } finally {
+        }
+        finally {
             Pop-Location
         }
     }
@@ -770,7 +781,8 @@ function Main {
         Write-Host "     (or .\SETUP_DESKTOP_APP_MASTER.ps1 for production build)" -ForegroundColor $colors.Progress
         Write-Host ""
         
-    } catch {
+    }
+    catch {
         Write-Error "Setup failed: $_"
         exit 1
     }

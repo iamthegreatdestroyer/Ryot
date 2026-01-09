@@ -35,10 +35,10 @@ $srcPath = Join-Path $projectRoot "src"
 $distPath = Join-Path $projectRoot "dist"
 
 $colors = @{
-    Success = "Green"
-    Warning = "Yellow"
-    Error = "Red"
-    Info = "Cyan"
+    Success  = "Green"
+    Warning  = "Yellow"
+    Error    = "Red"
+    Info     = "Cyan"
     Progress = "Magenta"
 }
 
@@ -116,7 +116,8 @@ function Verify-Dependencies {
     if (Test-CommandExists "node") {
         $nodeVersion = (node --version)
         Write-Success "Node.js installed: $nodeVersion"
-    } else {
+    }
+    else {
         Write-Error "Node.js not installed. Download from https://nodejs.org"
         $allGood = $false
     }
@@ -125,7 +126,8 @@ function Verify-Dependencies {
     if (Test-CommandExists "npm") {
         $npmVersion = (npm --version)
         Write-Success "npm installed: $npmVersion"
-    } else {
+    }
+    else {
         Write-Error "npm not installed. Install Node.js which includes npm."
         $allGood = $false
     }
@@ -133,10 +135,12 @@ function Verify-Dependencies {
     # Check vsce (VS Code Extension CLI)
     if (Test-CommandExists "vsce") {
         Write-Success "vsce (VS Code Extension CLI) installed"
-    } else {
+    }
+    else {
         if ($SkipDependencies) {
             Write-Warning "vsce not installed. Run: npm install -g @vscode/vsce"
-        } else {
+        }
+        else {
             Write-Step "Installing vsce..."
             npm install -g @vscode/vsce
             Write-Success "vsce installed"
@@ -453,27 +457,28 @@ function Setup-TypeScriptConfig {
     if (-not (Test-Path $tsconfigPath)) {
         $tsconfig = @{
             compilerOptions = @{
-                target = "ES2020"
-                module = "commonjs"
-                lib = @("ES2020")
-                outDir = "./dist"
-                rootDir = "./src"
-                strict = $true
-                esModuleInterop = $true
-                skipLibCheck = $true
+                target                           = "ES2020"
+                module                           = "commonjs"
+                lib                              = @("ES2020")
+                outDir                           = "./dist"
+                rootDir                          = "./src"
+                strict                           = $true
+                esModuleInterop                  = $true
+                skipLibCheck                     = $true
                 forceConsistentCasingInFileNames = $true
-                resolveJsonModule = $true
-                declaration = $true
-                declarationMap = $true
-                sourceMap = $true
+                resolveJsonModule                = $true
+                declaration                      = $true
+                declarationMap                   = $true
+                sourceMap                        = $true
             }
-            include = @("src/**/*")
-            exclude = @("node_modules", "**/*.spec.ts")
+            include         = @("src/**/*")
+            exclude         = @("node_modules", "**/*.spec.ts")
         } | ConvertTo-Json -Depth 10
         
         Set-Content -Path $tsconfigPath -Value $tsconfig -Encoding UTF8
         Write-Success "Created tsconfig.json"
-    } else {
+    }
+    else {
         Write-Success "tsconfig.json already exists"
     }
 }
@@ -489,24 +494,25 @@ function Setup-ESLintConfig {
     
     if (-not (Test-Path $eslintPath)) {
         $eslint = @{
-            env = @{
+            env           = @{
                 browser = $true
-                es2021 = $true
-                node = $true
+                es2021  = $true
+                node    = $true
             }
-            extends = @("eslint:recommended")
-            parser = "@typescript-eslint/parser"
+            extends       = @("eslint:recommended")
+            parser        = "@typescript-eslint/parser"
             parserOptions = @{
                 ecmaVersion = 12
-                sourceType = "module"
+                sourceType  = "module"
             }
-            plugins = @("@typescript-eslint")
-            rules = @{}
+            plugins       = @("@typescript-eslint")
+            rules         = @{}
         } | ConvertTo-Json -Depth 10
         
         Set-Content -Path $eslintPath -Value $eslint -Encoding UTF8
         Write-Success "Created .eslintrc.json"
-    } else {
+    }
+    else {
         Write-Success ".eslintrc.json already exists"
     }
 }
@@ -524,7 +530,8 @@ function Setup-NPM {
     try {
         npm install
         Write-Success "NPM dependencies installed"
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -542,7 +549,8 @@ function Compile-TypeScript {
     try {
         npm run compile
         Write-Success "TypeScript compiled successfully"
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -566,7 +574,8 @@ function Package-Extension {
         if ($vsixFile) {
             Write-Success "Package: $($vsixFile.Name)"
         }
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -594,9 +603,11 @@ function Publish-ToMarketplace {
     try {
         vsce publish
         Write-Success "Extension published to marketplace"
-    } catch {
+    }
+    catch {
         Write-Error "Publishing failed: $_"
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -632,7 +643,8 @@ function Main {
         Write-Host "  3. Or run: npm run package" -ForegroundColor $colors.Progress
         Write-Host ""
         
-    } catch {
+    }
+    catch {
         Write-Error "Setup failed: $_"
         exit 1
     }
